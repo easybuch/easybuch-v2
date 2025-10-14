@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { DashboardLayout } from '@/components/templates/DashboardLayout';
 import { Button } from '@/components/atoms/Button';
 import { Card, CardTitle, CardContent } from '@/components/atoms/Card';
-import { Upload, FileText, Search, Calendar, DollarSign, Loader2 } from 'lucide-react';
+import { Upload, FileText, Search, Calendar, DollarSign, Loader2, Tag, Store } from 'lucide-react';
 import { Input } from '@/components/atoms/Input';
-import { supabase } from '@/lib/supabase';
+import { ReceiptDetailModal } from '@/components/molecules/ReceiptDetailModal';
+import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import type { Receipt } from '@/lib/database.types';
 
@@ -20,6 +21,9 @@ export default function BelegePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -30,6 +34,7 @@ export default function BelegePage() {
 
   useEffect(() => {
     fetchReceipts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchReceipts = async () => {
@@ -85,13 +90,63 @@ export default function BelegePage() {
       if (error) throw error;
 
       if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
+        setSignedUrl(data.signedUrl);
+        setSelectedReceipt(receipt);
+        setIsModalOpen(true);
       }
     } catch (err) {
       console.error('Error generating signed URL:', err);
       alert('Fehler beim Öffnen der Datei');
     }
   };
+
+  const handleSaveReceipt = async (id: string, updates: Partial<Receipt>) => {
+    try {
+      const { error } = await supabaseUntyped
+        .from('receipts')
+        .update({
+          receipt_date: updates.receipt_date ?? null,
+          category: updates.category ?? null,
+          vendor: updates.vendor ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Refresh receipts list
+      await fetchReceipts();
+    } catch (err) {
+      console.error('Error updating receipt:', err);
+      throw err;
+    }
+  };
+
+  const handleDeleteReceipt = async (id: string) => {
+    try {
+      const receipt = receipts.find((r) => r.id === id);
+      if (!receipt) return;
+
+      // Delete file from storage
+      const { error: storageError } = await supabase.storage
+        .from('receipts')
+        .remove([receipt.file_url]);
+
+      if (storageError) throw storageError;
+
+      // Delete record from database
+      const { error: dbError } = await supabase.from('receipts').delete().eq('id', id);
+
+      if (dbError) throw dbError;
+
+      // Refresh receipts list
+      await fetchReceipts();
+    } catch (err) {
+      console.error('Error deleting receipt:', err);
+      throw err;
+    }
+  };
+
 
   return (
     <DashboardLayout breadcrumbs={breadcrumbs}>
@@ -179,7 +234,7 @@ export default function BelegePage() {
         <Card className="text-center py-16">
           <div className="max-w-md mx-auto">
             <p className="text-text-secondary mb-4">
-              Keine Belege gefunden für "{searchQuery}"
+              Keine Belege gefunden für &quot;{searchQuery}&quot;
             </p>
             <Button variant="secondary" onClick={() => setSearchQuery('')}>
               Suche zurücksetzen
@@ -188,29 +243,41 @@ export default function BelegePage() {
         </Card>
       )}
 
+      {/* Detail Modal */}
+      <ReceiptDetailModal
+        receipt={selectedReceipt}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedReceipt(null);
+          setSignedUrl(null);
+        }}
+        onSave={handleSaveReceipt}
+        onDelete={handleDeleteReceipt}
+        signedUrl={signedUrl}
+      />
+
       {/* Receipts Grid */}
       {!isLoading && !error && filteredReceipts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredReceipts.map((receipt) => (
-            <Card key={receipt.id} className="hover:shadow-lg transition-shadow">
+            <Card key={receipt.id} className="hover:shadow-lg transition-shadow cursor-pointer">
               <div className="p-6">
                 {/* File Type Badge */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-10 h-10 rounded-button flex items-center justify-center ${
-                        receipt.file_type === 'pdf' ? 'bg-red-100' : 'bg-blue-100'
-                      }`}
-                    >
-                      <FileText
-                        size={20}
-                        className={receipt.file_type === 'pdf' ? 'text-red-600' : 'text-blue-600'}
-                      />
-                    </div>
-                    <span className="text-xs font-medium text-text-footer uppercase">
-                      {receipt.file_type}
-                    </span>
+                <div className="flex items-center gap-2 mb-4">
+                  <div
+                    className={`w-10 h-10 rounded-button flex items-center justify-center ${
+                      receipt.file_type === 'pdf' ? 'bg-red-100' : 'bg-blue-100'
+                    }`}
+                  >
+                    <FileText
+                      size={20}
+                      className={receipt.file_type === 'pdf' ? 'text-red-600' : 'text-blue-600'}
+                    />
                   </div>
+                  <span className="text-xs font-medium text-text-footer uppercase">
+                    {receipt.file_type}
+                  </span>
                 </div>
 
                 {/* File Name */}
@@ -222,12 +289,30 @@ export default function BelegePage() {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-sm text-text-secondary">
                     <Calendar size={16} />
-                    <span>{formatDate(receipt.created_at)}</span>
+                    <span>
+                      {receipt.receipt_date
+                        ? formatDate(receipt.receipt_date)
+                        : formatDate(receipt.created_at)}
+                    </span>
                   </div>
-                  {receipt.amount && (
+                  <div className="flex items-center gap-2 text-sm text-text-secondary">
+                    <DollarSign size={16} />
+                    <span>
+                      {receipt.amount_gross
+                        ? `${receipt.amount_gross.toFixed(2).replace('.', ',')} €`
+                        : '—'}
+                    </span>
+                  </div>
+                  {receipt.category && (
                     <div className="flex items-center gap-2 text-sm text-text-secondary">
-                      <DollarSign size={16} />
-                      <span>{receipt.amount.toFixed(2)} €</span>
+                      <Tag size={16} />
+                      <span>{receipt.category}</span>
+                    </div>
+                  )}
+                  {receipt.vendor && (
+                    <div className="flex items-center gap-2 text-sm text-text-secondary">
+                      <Store size={16} />
+                      <span>{receipt.vendor}</span>
                     </div>
                   )}
                   <div className="text-xs text-text-footer">
@@ -238,11 +323,11 @@ export default function BelegePage() {
                 {/* Actions */}
                 <div className="flex gap-2">
                   <Button
-                    variant="secondary"
+                    variant="primary"
                     className="flex-1 text-sm"
                     onClick={() => handleViewReceipt(receipt)}
                   >
-                    Ansehen
+                    Details
                   </Button>
                 </div>
               </div>

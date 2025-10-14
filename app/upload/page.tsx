@@ -7,7 +7,7 @@ import { Button } from '@/components/atoms/Button';
 import { Card } from '@/components/atoms/Card';
 import { FileUploadZone, UploadedFile } from '@/components/molecules/FileUploadZone';
 import { Save, X, CheckCircle, AlertCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import type { ReceiptInsert } from '@/lib/database.types';
 
@@ -46,7 +46,6 @@ export default function UploadPage() {
     try {
 
       const file = uploadedFile.file;
-      const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${file.name}`;
       const filePath = `${user.id}/${fileName}`;
 
@@ -78,7 +77,7 @@ export default function UploadPage() {
         processed: false,
       };
 
-      const { error: dbError } = await supabase.from('receipts').insert(receiptData);
+      const { error: dbError } = await supabaseUntyped.from('receipts').insert(receiptData);
 
       if (dbError) {
         // Cleanup: Delete uploaded file if DB insert fails

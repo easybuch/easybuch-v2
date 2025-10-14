@@ -12,6 +12,10 @@ export interface Database {
           file_type: 'image' | 'pdf';
           file_size: number | null;
           amount: number | null;
+          amount_net: number | null;
+          amount_tax: number | null;
+          amount_gross: number | null;
+          tax_rate: number | null;
           receipt_date: string | null;
           category: string | null;
           vendor: string | null;
@@ -28,6 +32,10 @@ export interface Database {
           file_type: 'image' | 'pdf';
           file_size?: number | null;
           amount?: number | null;
+          amount_net?: number | null;
+          amount_tax?: number | null;
+          amount_gross?: number | null;
+          tax_rate?: number | null;
           receipt_date?: string | null;
           category?: string | null;
           vendor?: string | null;
@@ -44,6 +52,10 @@ export interface Database {
           file_type?: 'image' | 'pdf';
           file_size?: number | null;
           amount?: number | null;
+          amount_net?: number | null;
+          amount_tax?: number | null;
+          amount_gross?: number | null;
+          tax_rate?: number | null;
           receipt_date?: string | null;
           category?: string | null;
           vendor?: string | null;

@@ -1,13 +1,10 @@
-import { HTMLAttributes, forwardRef, ReactNode } from 'react';
+import { HTMLAttributes, forwardRef } from 'react';
 import { cn } from '@/utils/cn';
 
-export interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  withIcon?: boolean;
-  iconGradient?: string;
-}
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {}
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, withIcon = false, iconGradient, children, ...props }, ref) => {
+  ({ className, children, ...props }, ref) => {
     return (
       <div
         ref={ref}

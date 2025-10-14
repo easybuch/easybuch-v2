@@ -9,3 +9,4 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabaseUntyped = createClient(supabaseUrl, supabaseAnonKey);
