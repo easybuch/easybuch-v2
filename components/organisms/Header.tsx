@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Bell, User, LogOut } from 'lucide-react';
+import { ChevronRight, User, LogOut } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuth } from '@/lib/auth-context';
 
@@ -53,15 +53,6 @@ export function Header({ breadcrumbs = [], className }: HeaderProps) {
 
       {/* User Actions */}
       <div className="flex items-center gap-4">
-        {/* Notifications */}
-        <button
-          className="relative p-2 hover:bg-gray-100 rounded-button transition-colors"
-          aria-label="Benachrichtigungen"
-        >
-          <Bell size={20} className="text-text-secondary" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-        </button>
-
         {/* User Dropdown */}
         <div className="relative">
           <button

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Home, FileText, Settings, Menu, X } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { useAuth } from '@/lib/auth-context';
 
 export interface SidebarProps {
   className?: string;
@@ -17,6 +18,15 @@ const menuItems = [
 
 export function Sidebar({ className }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = useAuth();
+
+  const getUserInitial = () => {
+    return user?.email?.charAt(0).toUpperCase() || 'U';
+  };
+
+  const getUserName = () => {
+    return user?.email?.split('@')[0] || 'Benutzer';
+  };
 
   return (
     <>
@@ -78,11 +88,11 @@ export function Sidebar({ className }: SidebarProps) {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <div className="flex items-center gap-3 px-4 py-3">
             <div className="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center">
-              <span className="text-brand font-bold">U</span>
+              <span className="text-brand font-bold">{getUserInitial()}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-text-primary truncate">Benutzer</p>
-              <p className="text-xs text-text-footer truncate">user@easybuch.de</p>
+              <p className="text-sm font-medium text-text-primary truncate">{getUserName()}</p>
+              <p className="text-xs text-text-footer truncate">{user?.email || 'user@easybuch.de'}</p>
             </div>
           </div>
         </div>
