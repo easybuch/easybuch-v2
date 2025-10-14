@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-color: #00c853;
+  --single-text: #364153;
+  --text-color: #4a5565;
+  --hero-single-text: #6a7282;
+  --footer-text: #99a1af;
+  --black: #101828;
+  --white: #fefefe;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-text-secondary;
+    font-family: 'Noto Sans', Arial, sans-serif;
+  }
+}
+
+@layer utilities {
+  .container-custom {
+    @apply max-w-container mx-auto px-5;
+  }
+}
