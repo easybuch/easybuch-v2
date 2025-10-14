@@ -1,5 +1,6 @@
 import { Noto_Sans } from 'next/font/google';
 import './globals.css';
+import { AuthProvider } from '@/lib/auth-context';
 
 const notoSans = Noto_Sans({
   subsets: ['latin'],
@@ -15,7 +16,9 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="de">
-      <body className={notoSans.className}>{children}</body>
+      <body className={notoSans.className}>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

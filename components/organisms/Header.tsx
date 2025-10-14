@@ -1,7 +1,10 @@
 'use client';
 
-import { ChevronRight, Bell, User } from 'lucide-react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ChevronRight, Bell, User, LogOut } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { useAuth } from '@/lib/auth-context';
 
 export interface HeaderProps {
   breadcrumbs?: { label: string; href?: string }[];
@@ -9,6 +12,19 @@ export interface HeaderProps {
 }
 
 export function Header({ breadcrumbs = [], className }: HeaderProps) {
+  const router = useRouter();
+  const { user, signOut } = useAuth();
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/login');
+  };
+
+  const getUserEmail = () => {
+    return user?.email?.split('@')[0] || 'Benutzer';
+  };
+
   return (
     <header
       className={cn(
@@ -47,15 +63,43 @@ export function Header({ breadcrumbs = [], className }: HeaderProps) {
         </button>
 
         {/* User Dropdown */}
-        <button
-          className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-button transition-colors"
-          aria-label="Benutzermenu"
-        >
-          <div className="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center">
-            <User size={16} className="text-brand" />
-          </div>
-          <span className="text-sm font-medium text-text-primary hidden md:block">Benutzer</span>
-        </button>
+        <div className="relative">
+          <button
+            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-button transition-colors"
+            aria-label="Benutzermenu"
+            onClick={() => setShowDropdown(!showDropdown)}
+          >
+            <div className="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center">
+              <User size={16} className="text-brand" />
+            </div>
+            <span className="text-sm font-medium text-text-primary hidden md:block">
+              {getUserEmail()}
+            </span>
+          </button>
+
+          {/* Dropdown Menu */}
+          {showDropdown && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowDropdown(false)}
+              />
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-button shadow-lg border border-gray-200 py-2 z-20">
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <p className="text-sm font-medium text-text-primary">{getUserEmail()}</p>
+                  <p className="text-xs text-text-footer truncate">{user?.email}</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 text-left text-sm text-text-secondary hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <LogOut size={16} />
+                  Abmelden
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
