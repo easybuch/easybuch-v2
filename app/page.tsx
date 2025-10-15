@@ -31,6 +31,7 @@ export default function HomePage() {
     if (user) {
       fetchStatistics();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchStatistics = async () => {
@@ -45,8 +46,16 @@ export default function HomePage() {
 
       if (error) throw error;
 
+      // Type guard for receipts
+      type ReceiptStats = {
+        amount_gross: number | null;
+        receipt_date: string | null;
+        created_at: string;
+      };
+      const typedReceipts = (receipts || []) as ReceiptStats[];
+
       // Calculate statistics
-      const total = receipts?.length || 0;
+      const total = typedReceipts.length;
       setReceiptCount(total);
 
       // Get current month start date
@@ -55,14 +64,14 @@ export default function HomePage() {
       const monthStartStr = monthStart.toISOString().split('T')[0];
 
       // Filter receipts uploaded this month (based on created_at)
-      const monthlyReceipts = receipts?.filter((r) => {
+      const monthlyReceipts = typedReceipts.filter((r) => {
         return r.created_at >= monthStartStr;
-      }) || [];
+      });
 
       setMonthlyCount(monthlyReceipts.length);
 
       // Calculate total amount
-      const totalSum = receipts?.reduce((sum, r) => sum + (r.amount_gross || 0), 0) || 0;
+      const totalSum = typedReceipts.reduce((sum, r) => sum + (r.amount_gross || 0), 0);
       setTotalAmount(totalSum);
 
       // Calculate monthly amount (also based on upload date)

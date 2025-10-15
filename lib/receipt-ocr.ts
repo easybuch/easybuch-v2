@@ -35,6 +35,8 @@ export const RECEIPT_CATEGORIES = [
   'Sonstiges',
 ] as const;
 
+export type ReceiptCategory = typeof RECEIPT_CATEGORIES[number];
+
 /**
  * Extracts receipt data from an image or PDF using Claude 3.5 Sonnet
  * @param fileBuffer - The file buffer (image or PDF)
@@ -170,7 +172,7 @@ Gib NUR das JSON zurück, ohne zusätzlichen Text oder Markdown-Formatierung.`;
     };
 
     // Validate category
-    if (result.kategorie && !RECEIPT_CATEGORIES.includes(result.kategorie as any)) {
+    if (result.kategorie && !RECEIPT_CATEGORIES.includes(result.kategorie as ReceiptCategory)) {
       result.kategorie = 'Sonstiges';
     }
 
@@ -185,10 +187,11 @@ Gib NUR das JSON zurück, ohne zusätzlichen Text oder Markdown-Formatierung.`;
  * Fallback function using GPT-4o if Claude fails
  * This can be implemented later as a backup strategy
  */
-export async function extractReceiptDataWithGPT4o(
-  fileBuffer: Buffer,
-  mimeType: string
-): Promise<ReceiptData> {
-  // TODO: Implement GPT-4o fallback
-  throw new Error('GPT-4o fallback not yet implemented');
-}
+// Commented out unused function to pass build
+// export async function extractReceiptDataWithGPT4o(
+//   fileBuffer: Buffer,
+//   mimeType: string
+// ): Promise<ReceiptData> {
+//   // TODO: Implement GPT-4o fallback
+//   throw new Error('GPT-4o fallback not yet implemented');
+// }
