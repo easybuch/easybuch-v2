@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/atoms/Button';
 import { Card } from '@/components/atoms/Card';
 import { Input } from '@/components/atoms/Input';
-import { UserPlus, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { UserPlus, Loader2, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,6 +18,8 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -134,15 +136,26 @@ export default function RegisterPage() {
               >
                 Passwort
               </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mindestens 6 Zeichen"
-                required
-                disabled={isSubmitting || success}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mindestens 6 Zeichen"
+                  required
+                  disabled={isSubmitting || success}
+                  className="pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-footer hover:text-text-primary transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
 
             <div>
@@ -152,15 +165,26 @@ export default function RegisterPage() {
               >
                 Passwort bestätigen
               </label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Passwort wiederholen"
-                required
-                disabled={isSubmitting || success}
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Passwort wiederholen"
+                  required
+                  disabled={isSubmitting || success}
+                  className="pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-footer hover:text-text-primary transition-colors"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
 
             <Button
@@ -196,7 +220,7 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <p className="text-center text-sm text-text-footer mt-8">
-          © 2024 EasyBuch. Alle Rechte vorbehalten.
+          © 2025 EasyBuch. Alle Rechte vorbehalten.
         </p>
       </div>
     </div>
