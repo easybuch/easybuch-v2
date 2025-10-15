@@ -374,6 +374,25 @@ export default function BelegePage() {
 
                 {/* Metadata */}
                 <div className="space-y-3 mb-8 flex-grow">
+                  {/* Vendor/Supplier */}
+                  {receipt.vendor && (
+                    <div className="flex items-center gap-2 text-sm text-text-secondary">
+                      <Store size={16} className="text-brand" />
+                      <span className="truncate">{receipt.vendor}</span>
+                    </div>
+                  )}
+                  
+                  {/* Amount */}
+                  <div className="flex items-center gap-2 text-sm text-text-secondary">
+                    <Coins size={16} className="text-brand" />
+                    <span className="font-semibold">
+                      {receipt.amount_gross
+                        ? `${receipt.amount_gross.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
+                        : '—'}
+                    </span>
+                  </div>
+                  
+                  {/* Date */}
                   <div className="flex items-center gap-2 text-sm text-text-secondary">
                     <Calendar size={16} className="text-brand" />
                     <span>
@@ -382,24 +401,12 @@ export default function BelegePage() {
                         : formatDate(receipt.created_at)}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-text-secondary">
-                    <Coins size={16} className="text-brand" />
-                    <span>
-                      {receipt.amount_gross
-                        ? `${receipt.amount_gross.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
-                        : '—'}
-                    </span>
-                  </div>
+                  
+                  {/* Category */}
                   {receipt.category && (
                     <div className="flex items-center gap-2 text-sm text-text-secondary">
                       <Tag size={16} className="text-brand" />
                       <span className="truncate">{receipt.category}</span>
-                    </div>
-                  )}
-                  {receipt.vendor && (
-                    <div className="flex items-center gap-2 text-sm text-text-secondary">
-                      <Store size={16} className="text-brand" />
-                      <span className="truncate">{receipt.vendor}</span>
                     </div>
                   )}
                 </div>

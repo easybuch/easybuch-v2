@@ -58,7 +58,9 @@ export function Sidebar({ className }: SidebarProps) {
       >
         {/* Logo */}
         <div className="h-20 flex items-center justify-center border-b border-gray-200">
-          <div className="text-2xl font-bold text-brand">EasyBuch</div>
+          <Link href="/" className="text-2xl font-bold text-brand hover:text-brand/80 transition-colors">
+            EasyBuch
+          </Link>
         </div>
 
         {/* Navigation */}

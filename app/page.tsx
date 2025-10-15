@@ -88,7 +88,7 @@ export default function HomePage() {
     <DashboardLayout breadcrumbs={breadcrumbs}>
       {/* Hero Section */}
       <section className="max-w-4xl mx-auto text-center py-12 md:py-20">
-        <h1 className="text-4xl md:text-section font-bold text-text-primary mb-8">
+        <h1 className="text-3xl md:text-section font-bold text-text-primary mb-8">
           Willkommen bei EasyBuch
         </h1>
         <p className="text-lg md:text-xl text-text-secondary mb-5">
