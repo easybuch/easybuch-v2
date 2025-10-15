@@ -38,6 +38,20 @@ const config: Config = {
       maxWidth: {
         container: '1360px',
       },
+      keyframes: {
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'slide-in-from-top': {
+          '0%': { transform: 'translateY(-16px)' },
+          '100%': { transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fade-in 0.3s ease-out',
+        'slide-in-from-top': 'slide-in-from-top 0.3s ease-out',
+      },
     },
   },
   plugins: [],

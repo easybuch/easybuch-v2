@@ -111,19 +111,19 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
   const displayError = error || localError;
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full">
       {!uploadedFile ? (
         <div
           {...getRootProps()}
           className={cn(
-            'relative border-2 border-dashed rounded-card p-12 md:p-16',
+            'relative rounded-card p-8 h-full',
             'transition-all duration-200 cursor-pointer',
             'flex flex-col items-center justify-center text-center',
             'min-h-[320px] md:min-h-[400px]',
             isDragActive
-              ? 'border-brand bg-brand/5 scale-[1.02]'
-              : 'border-brand/40 hover:border-brand hover:bg-brand/5',
-            displayError && 'border-red-500 bg-red-50'
+              ? 'bg-brand/10 scale-[1.02]'
+              : 'bg-gray-50 hover:bg-brand/5',
+            displayError && 'bg-red-50'
           )}
         >
           <input {...getInputProps()} />

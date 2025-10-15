@@ -19,6 +19,7 @@ export interface Database {
           receipt_date: string | null;
           category: string | null;
           vendor: string | null;
+          notes: string | null;
           raw_ocr_text: string | null;
           created_at: string;
           updated_at: string;
@@ -39,6 +40,7 @@ export interface Database {
           receipt_date?: string | null;
           category?: string | null;
           vendor?: string | null;
+          notes?: string | null;
           raw_ocr_text?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -59,6 +61,7 @@ export interface Database {
           receipt_date?: string | null;
           category?: string | null;
           vendor?: string | null;
+          notes?: string | null;
           raw_ocr_text?: string | null;
           created_at?: string;
           updated_at?: string;

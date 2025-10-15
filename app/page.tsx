@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { DashboardLayout } from '@/components/templates/DashboardLayout';
 import { Button } from '@/components/atoms/Button';
 import { Card } from '@/components/atoms/Card';
-import { Upload, FileText, TrendingUp } from 'lucide-react';
+import { Upload, FileText, Euro } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 
@@ -15,6 +15,9 @@ export default function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [receiptCount, setReceiptCount] = useState<number>(0);
+  const [monthlyCount, setMonthlyCount] = useState<number>(0);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
+  const [monthlyAmount, setMonthlyAmount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
   // Redirect to login if not authenticated
@@ -26,23 +29,47 @@ export default function HomePage() {
 
   useEffect(() => {
     if (user) {
-      fetchReceiptCount();
+      fetchStatistics();
     }
   }, [user]);
 
-  const fetchReceiptCount = async () => {
+  const fetchStatistics = async () => {
     if (!user) return;
 
     try {
-      const { count, error } = await supabase
+      // Get all receipts for the user
+      const { data: receipts, error } = await supabase
         .from('receipts')
-        .select('*', { count: 'exact', head: true })
+        .select('amount_gross, receipt_date, created_at')
         .eq('user_id', user.id);
 
       if (error) throw error;
-      setReceiptCount(count || 0);
+
+      // Calculate statistics
+      const total = receipts?.length || 0;
+      setReceiptCount(total);
+
+      // Get current month start date
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthStartStr = monthStart.toISOString().split('T')[0];
+
+      // Filter receipts uploaded this month (based on created_at)
+      const monthlyReceipts = receipts?.filter((r) => {
+        return r.created_at >= monthStartStr;
+      }) || [];
+
+      setMonthlyCount(monthlyReceipts.length);
+
+      // Calculate total amount
+      const totalSum = receipts?.reduce((sum, r) => sum + (r.amount_gross || 0), 0) || 0;
+      setTotalAmount(totalSum);
+
+      // Calculate monthly amount (also based on upload date)
+      const monthlySum = monthlyReceipts.reduce((sum, r) => sum + (r.amount_gross || 0), 0);
+      setMonthlyAmount(monthlySum);
     } catch (err) {
-      console.error('Error fetching receipt count:', err);
+      console.error('Error fetching statistics:', err);
     } finally {
       setIsLoading(false);
     }
@@ -82,41 +109,45 @@ export default function HomePage() {
 
       {/* Stats Section */}
       <section className="max-w-4xl mx-auto mt-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-text-footer mb-1">Gespeicherte Belege</p>
-                <p className="text-3xl font-bold text-text-primary">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Receipts Card */}
+          <Card className="p-8">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <p className="text-sm text-text-footer mb-2">Gespeicherte Belege</p>
+                <p className="text-4xl font-bold text-text-primary mb-3">
                   {isLoading ? '...' : receiptCount}
                 </p>
+                <div className="flex items-center gap-2 text-text-secondary">
+                  <div className="w-2 h-2 rounded-full bg-brand"></div>
+                  <p className="text-sm">
+                    {isLoading ? '...' : monthlyCount} diesen Monat hochgeladen
+                  </p>
+                </div>
               </div>
-              <div className="w-12 h-12 rounded-button bg-brand/10 flex items-center justify-center">
-                <FileText size={24} className="text-brand" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-text-footer mb-1">Diesen Monat</p>
-                <p className="text-3xl font-bold text-text-primary">0</p>
-              </div>
-              <div className="w-12 h-12 rounded-button bg-green-100 flex items-center justify-center">
-                <TrendingUp size={24} className="text-green-600" />
+              <div className="w-14 h-14 rounded-button bg-brand/10 flex items-center justify-center flex-shrink-0">
+                <FileText size={28} className="text-brand" />
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-text-footer mb-1">Verarbeitet</p>
-                <p className="text-3xl font-bold text-text-primary">0</p>
+          {/* Expenses Card */}
+          <Card className="p-8">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <p className="text-sm text-text-footer mb-2">Gesamtausgaben</p>
+                <p className="text-4xl font-bold text-text-primary mb-3">
+                  {isLoading ? '...' : `${totalAmount.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}
+                </p>
+                <div className="flex items-center gap-2 text-text-secondary">
+                  <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                  <p className="text-sm">
+                    {isLoading ? '...' : `${monthlyAmount.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`} diesen Monat hochgeladen
+                  </p>
+                </div>
               </div>
-              <div className="w-12 h-12 rounded-button bg-blue-100 flex items-center justify-center">
-                <Upload size={24} className="text-blue-600" />
+              <div className="w-14 h-14 rounded-button bg-green-100 flex items-center justify-center flex-shrink-0">
+                <Euro size={28} className="text-green-600" />
               </div>
             </div>
           </Card>

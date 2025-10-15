@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { DashboardLayout } from '@/components/templates/DashboardLayout';
 import { Button } from '@/components/atoms/Button';
 import { Card, CardTitle, CardContent } from '@/components/atoms/Card';
-import { Upload, FileText, Search, Calendar, DollarSign, Loader2, Tag, Store } from 'lucide-react';
+import { Upload, FileText, Search, Calendar, Coins, Loader2, Tag, Store } from 'lucide-react';
 import { Input } from '@/components/atoms/Input';
 import { ReceiptDetailModal } from '@/components/molecules/ReceiptDetailModal';
 import { supabase, supabaseUntyped } from '@/lib/supabase';
@@ -62,7 +62,8 @@ export default function BelegePage() {
   };
 
   const filteredReceipts = receipts.filter((receipt) =>
-    receipt.file_name.toLowerCase().includes(searchQuery.toLowerCase())
+    receipt.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (receipt.vendor && receipt.vendor.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const formatDate = (dateString: string) => {
@@ -108,6 +109,7 @@ export default function BelegePage() {
           receipt_date: updates.receipt_date ?? null,
           category: updates.category ?? null,
           vendor: updates.vendor ?? null,
+          notes: updates.notes ?? null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id);
@@ -177,7 +179,7 @@ export default function BelegePage() {
               className="absolute left-4 top-1/2 -translate-y-1/2 text-text-footer"
             />
             <Input
-              placeholder="Belege durchsuchen..."
+              placeholder="Nach Dateiname oder Händler/Lieferant suchen..."
               className="pl-12"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -296,10 +298,10 @@ export default function BelegePage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-text-secondary">
-                    <DollarSign size={16} />
+                    <Coins size={16} />
                     <span>
                       {receipt.amount_gross
-                        ? `${receipt.amount_gross.toFixed(2).replace('.', ',')} €`
+                        ? `${receipt.amount_gross.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
                         : '—'}
                     </span>
                   </div>
@@ -315,9 +317,6 @@ export default function BelegePage() {
                       <span>{receipt.vendor}</span>
                     </div>
                   )}
-                  <div className="text-xs text-text-footer">
-                    {formatFileSize(receipt.file_size)}
-                  </div>
                 </div>
 
                 {/* Actions */}

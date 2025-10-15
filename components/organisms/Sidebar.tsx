@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Home, FileText, Settings, Menu, X } from 'lucide-react';
+import { Home, FileText, Menu, X } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuth } from '@/lib/auth-context';
 
@@ -13,7 +13,6 @@ export interface SidebarProps {
 const menuItems = [
   { icon: Home, label: 'Dashboard', href: '/' },
   { icon: FileText, label: 'Meine Belege', href: '/belege' },
-  { icon: Settings, label: 'Einstellungen', href: '/settings' },
 ];
 
 export function Sidebar({ className }: SidebarProps) {

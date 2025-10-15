@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Download, Trash2, Save, Loader2 } from 'lucide-react';
+import { X, Download, Trash2, Save, Loader2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
 import type { Receipt } from '@/lib/database.types';
@@ -17,12 +17,21 @@ interface ReceiptDetailModalProps {
 }
 
 const CATEGORIES = [
-  'Fahrtkosten',
-  'Bürobedarf',
-  'Verpflegung',
-  'Unterkunft',
-  'Kommunikation',
-  'Software',
+  'Büromaterial & Ausstattung',
+  'Fahrtkosten (Kraftstoff & Parkplatz)',
+  'Fahrtkosten (ÖPNV & Bahn)',
+  'Verpflegung & Bewirtung',
+  'Unterkunft & Reisen',
+  'Software & Lizenzen',
+  'Hardware & Elektronik',
+  'Telekommunikation & Internet',
+  'Marketing & Werbung',
+  'Website & Online-Dienste',
+  'Steuerberatung',
+  'Rechtsberatung',
+  'Versicherungen',
+  'Miete & Nebenkosten',
+  'Weiterbildung',
   'Sonstiges',
 ];
 
@@ -42,6 +51,7 @@ export const ReceiptDetailModal = ({
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   useEffect(() => {
     if (receipt) {
@@ -49,7 +59,7 @@ export const ReceiptDetailModal = ({
         receipt_date: receipt.receipt_date || '',
         category: receipt.category || '',
         vendor: receipt.vendor || '',
-        notes: '',
+        notes: receipt.notes || '',
       });
     }
   }, [receipt]);
@@ -63,8 +73,21 @@ export const ReceiptDetailModal = ({
         receipt_date: formData.receipt_date || null,
         category: formData.category || null,
         vendor: formData.vendor || null,
+        notes: formData.notes || null,
       });
-      onClose();
+      
+      // Show success toast
+      setShowSuccessToast(true);
+      
+      // Hide toast after 2 seconds
+      setTimeout(() => {
+        setShowSuccessToast(false);
+      }, 2000);
+      
+      // Close modal after 2.5 seconds
+      setTimeout(() => {
+        onClose();
+      }, 2500);
     } catch (error) {
       console.error('Error saving receipt:', error);
       alert('Fehler beim Speichern');
@@ -75,7 +98,11 @@ export const ReceiptDetailModal = ({
 
   const formatAmount = (amount: number | null) => {
     if (amount === null || amount === undefined) return '—';
-    return amount.toFixed(2).replace('.', ',') + ' €';
+    // Format with thousands separator (German format)
+    return amount.toLocaleString('de-DE', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    }) + ' €';
   };
 
   const formatTaxRate = (rate: number | null) => {
@@ -111,6 +138,19 @@ export const ReceiptDetailModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[60] animate-fade-in animate-slide-in-from-top">
+          <div className="bg-green-600 text-white px-6 py-4 rounded-button shadow-lg flex items-center gap-3">
+            <CheckCircle size={24} className="flex-shrink-0 animate-pulse" />
+            <div>
+              <p className="font-semibold">Erfolgreich gespeichert!</p>
+              <p className="text-sm text-green-100">Ihre Änderungen wurden übernommen.</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="bg-white rounded-card shadow-card-hover w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -265,15 +305,6 @@ export const ReceiptDetailModal = ({
                 />
               </div>
 
-              {/* OCR Info */}
-              {receipt.raw_ocr_text && (
-                <div className="bg-blue-50 border border-blue-200 rounded-button p-4">
-                  <p className="text-sm font-medium text-blue-900 mb-2">OCR-Rohdaten verfügbar</p>
-                  <p className="text-xs text-blue-700">
-                    Dieser Beleg wurde automatisch verarbeitet. Die Werte wurden vorausgefüllt.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>

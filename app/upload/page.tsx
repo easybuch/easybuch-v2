@@ -6,10 +6,11 @@ import { DashboardLayout } from '@/components/templates/DashboardLayout';
 import { Button } from '@/components/atoms/Button';
 import { Card } from '@/components/atoms/Card';
 import { FileUploadZone, UploadedFile } from '@/components/molecules/FileUploadZone';
-import { Save, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Save, X, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import type { ReceiptInsert } from '@/lib/database.types';
+import type { ReceiptData } from '@/lib/receipt-ocr';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -18,6 +19,9 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedData, setExtractedData] = useState<ReceiptData | null>(null);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -31,10 +35,46 @@ export default function UploadPage() {
     { label: 'Neuen Beleg hochladen' },
   ];
 
-  const handleFileSelect = (file: UploadedFile | null) => {
+  const handleFileSelect = async (file: UploadedFile | null) => {
     setUploadedFile(file);
     setError(null);
     setShowSuccess(false);
+    setExtractedData(null);
+    setExtractionError(null);
+
+    // Automatically extract data when file is selected
+    if (file) {
+      await extractReceiptData(file);
+    }
+  };
+
+  const extractReceiptData = async (file: UploadedFile) => {
+    setIsExtracting(true);
+    setExtractionError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file.file);
+
+      const response = await fetch('/api/receipts/extract', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Fehler bei der Datenextraktion');
+      }
+
+      setExtractedData(result.data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Fehler bei der Datenextraktion';
+      setExtractionError(errorMessage);
+      console.error('Extraction error:', err);
+    } finally {
+      setIsExtracting(false);
+    }
   };
 
   const handleSave = async () => {
@@ -67,14 +107,22 @@ export default function UploadPage() {
       // 3. Determine file type
       const fileType: 'image' | 'pdf' = file.type.includes('pdf') ? 'pdf' : 'image';
 
-      // 4. Create database entry
+      // 4. Create database entry with extracted data
       const receiptData: ReceiptInsert = {
         user_id: user.id,
         file_url: storagePath, // Store path, not URL
         file_name: file.name,
         file_type: fileType,
         file_size: file.size,
-        processed: false,
+        processed: extractedData ? true : false,
+        amount_net: extractedData?.betrag_netto ?? null,
+        amount_tax: extractedData?.mwst_betrag ?? null,
+        amount_gross: extractedData?.betrag_brutto ?? null,
+        tax_rate: extractedData?.mwst_satz ?? null,
+        receipt_date: extractedData?.datum ?? null,
+        category: extractedData?.kategorie ?? null,
+        vendor: extractedData?.lieferant ?? null,
+        raw_ocr_text: extractedData?.raw_text ?? null,
       };
 
       const { error: dbError } = await supabaseUntyped.from('receipts').insert(receiptData);
@@ -108,78 +156,183 @@ export default function UploadPage() {
 
   return (
     <DashboardLayout breadcrumbs={breadcrumbs}>
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div>
           <h1 className="text-3xl md:text-section font-bold text-text-primary mb-2">
             Neuen Beleg hochladen
           </h1>
           <p className="text-text-secondary">
-            Laden Sie ein Foto oder PDF Ihres Belegs hoch. EasyBuch erkennt und speichert die
-            Informationen automatisch.
+            Laden Sie ein Foto oder PDF Ihres Belegs hoch. Die Informationen werden automatisch erkannt.
           </p>
         </div>
+      </div>
 
-        {/* Upload Card */}
-        <Card className="mb-6">
-          <FileUploadZone
-            onFileSelect={handleFileSelect}
-            uploadedFile={uploadedFile}
-            error={error}
-          />
+        {/* Two Column Layout: Upload + Extracted Data */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Left Column: Upload */}
+          <Card className="min-h-[500px]">
+            <FileUploadZone
+              onFileSelect={handleFileSelect}
+              uploadedFile={uploadedFile}
+              error={error}
+            />
+          </Card>
+
+        {/* Right Column: Extracted Data or Status */}
+        <Card className="flex items-center justify-center min-h-[500px]">
+          {/* Loading State */}
+          {isExtracting && (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <Loader2 size={48} className="text-brand animate-spin mb-4" />
+              <p className="font-semibold text-text-primary mb-2">Beleg wird analysiert...</p>
+              <p className="text-sm text-text-secondary">
+                Betrag, Datum und weitere Informationen werden automatisch extrahiert
+              </p>
+            </div>
+          )}
+
+          {/* Extracted Data */}
+          {extractedData && !isExtracting && (
+              <div className="p-6 w-full bg-green-50">
+                <div className="flex items-center gap-2 mb-6">
+                  <Sparkles size={20} className="text-brand" />
+                  <h3 className="font-semibold text-text-primary">Erkannte Daten</h3>
+                </div>
+                <div className="space-y-4">
+                  {extractedData.lieferant && (
+                    <div className="pb-3 border-b border-gray-200">
+                      <p className="text-xs text-text-footer mb-1">Händler/Lieferant</p>
+                      <p className="font-medium text-text-primary">{extractedData.lieferant}</p>
+                    </div>
+                  )}
+                  {extractedData.betrag_brutto && (
+                    <div className="pb-3 border-b border-gray-200">
+                      <p className="text-xs text-text-footer mb-1">Bruttobetrag</p>
+                      <p className="font-semibold text-xl text-brand">
+                        {extractedData.betrag_brutto.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      </p>
+                    </div>
+                  )}
+                  {extractedData.betrag_netto && (
+                    <div className="pb-3 border-b border-gray-200">
+                      <p className="text-xs text-text-footer mb-1">Nettobetrag</p>
+                      <p className="font-medium text-text-primary">
+                        {extractedData.betrag_netto.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      </p>
+                    </div>
+                  )}
+                  {extractedData.mwst_betrag && (
+                    <div className="pb-3 border-b border-gray-200">
+                      <p className="text-xs text-text-footer mb-1">MwSt.-Betrag</p>
+                      <p className="font-medium text-text-primary">
+                        {extractedData.mwst_betrag.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      </p>
+                    </div>
+                  )}
+                  {extractedData.mwst_satz && (
+                    <div className="pb-3 border-b border-gray-200">
+                      <p className="text-xs text-text-footer mb-1">MwSt.-Satz</p>
+                      <p className="font-medium text-text-primary">{extractedData.mwst_satz}%</p>
+                    </div>
+                  )}
+                  {extractedData.datum && (
+                    <div className="pb-3 border-b border-gray-200">
+                      <p className="text-xs text-text-footer mb-1">Datum</p>
+                      <p className="font-medium text-text-primary">
+                        {new Date(extractedData.datum).toLocaleDateString('de-DE')}
+                      </p>
+                    </div>
+                  )}
+                  {extractedData.kategorie && (
+                    <div className="pb-3">
+                      <p className="text-xs text-text-footer mb-1">Kategorie</p>
+                      <p className="font-medium text-text-primary">{extractedData.kategorie}</p>
+                    </div>
+                  )}
+                </div>
+            </div>
+          )}
+
+          {/* Extraction Error */}
+          {extractionError && !isExtracting && (
+            <div className="p-8 text-center">
+              <AlertCircle size={48} className="text-yellow-600 mx-auto mb-4" />
+              <h3 className="font-semibold text-text-primary mb-2">Automatische Erkennung fehlgeschlagen</h3>
+              <p className="text-sm text-text-secondary mb-3">{extractionError}</p>
+              <p className="text-sm text-text-footer">
+                Sie können den Beleg trotzdem speichern und die Daten später manuell ergänzen.
+              </p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!uploadedFile && !isExtracting && !extractedData && !extractionError && (
+            <div className="p-8 text-center">
+              <Sparkles size={48} className="text-gray-300 mx-auto mb-4" />
+              <p className="text-text-secondary mb-2">Erkannte Daten erscheinen hier</p>
+              <p className="text-sm text-text-footer">
+                Laden Sie einen Beleg hoch, um die automatische Erkennung zu starten
+              </p>
+            </div>
+          )}
         </Card>
+      </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-button flex items-center gap-3">
-            <AlertCircle size={24} className="text-red-600 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-red-800">Fehler beim Hochladen</p>
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
+      {/* Extraction Error Banner (below cards) */}
+      {extractionError && !isExtracting && (
+        <Card className="mb-6 bg-yellow-50 border-yellow-200">
+          <div className="p-4 flex items-center gap-3">
+            <AlertCircle size={20} className="text-yellow-600 flex-shrink-0" />
+            <p className="text-sm text-yellow-800">
+              Die automatische Erkennung war nicht erfolgreich. Sie können den Beleg trotzdem speichern.
+            </p>
           </div>
-        )}
+        </Card>
+      )}
 
-        {/* Success Message */}
-        {showSuccess && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-button flex items-center gap-3">
-            <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-green-800">Beleg erfolgreich gespeichert!</p>
-              <p className="text-sm text-green-700">Sie werden zu Ihren Belegen weitergeleitet...</p>
-            </div>
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-button flex items-center gap-3">
+          <AlertCircle size={24} className="text-red-600 flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-red-800">Fehler beim Hochladen</p>
+            <p className="text-sm text-red-700">{error}</p>
           </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-end">
-          <Button
-            variant="secondary"
-            onClick={handleCancel}
-            disabled={isSubmitting}
-            className="sm:w-auto"
-          >
-            <X size={20} className="mr-2" />
-            Abbrechen
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            disabled={!uploadedFile || isSubmitting}
-            className="sm:w-auto"
-          >
-            <Save size={20} className="mr-2" />
-            {isSubmitting ? 'Wird gespeichert...' : 'Beleg speichern'}
-          </Button>
         </div>
+      )}
 
-        {/* Info Box - Placeholder for future fields */}
-        <div className="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-button">
-          <p className="text-sm text-text-footer text-center">
-            💡 <strong>Bald verfügbar:</strong> Automatische Erkennung von Betrag, Datum und
-            Kategorie
-          </p>
+      {/* Success Message */}
+      {showSuccess && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-button flex items-center gap-3">
+          <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-green-800">Beleg erfolgreich gespeichert!</p>
+            <p className="text-sm text-green-700">Sie werden zu Ihren Belegen weitergeleitet...</p>
+          </div>
         </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-end">
+        <Button
+          variant="secondary"
+          onClick={handleCancel}
+          disabled={isSubmitting}
+          className="sm:w-auto"
+        >
+          <X size={20} className="mr-2" />
+          Abbrechen
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleSave}
+          disabled={!uploadedFile || isSubmitting}
+          className="sm:w-auto"
+        >
+          <Save size={20} className="mr-2" />
+          {isSubmitting ? 'Wird gespeichert...' : 'Beleg speichern'}
+        </Button>
       </div>
     </DashboardLayout>
   );
