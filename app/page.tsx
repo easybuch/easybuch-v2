@@ -88,13 +88,13 @@ export default function HomePage() {
     <DashboardLayout breadcrumbs={breadcrumbs}>
       {/* Hero Section */}
       <section className="max-w-4xl mx-auto text-center py-12 md:py-20">
-        <h1 className="text-4xl md:text-section font-bold text-text-primary mb-6">
+        <h1 className="text-4xl md:text-section font-bold text-text-primary mb-8">
           Willkommen bei EasyBuch
         </h1>
-        <p className="text-lg md:text-xl text-text-secondary mb-4">
+        <p className="text-lg md:text-xl text-text-secondary mb-5">
           Ihre digitale Belegverwaltung für Selbständige und kleine Unternehmen
         </p>
-        <p className="text-base text-text-light mb-12 max-w-2xl mx-auto">
+        <p className="text-base text-text-light mb-14 max-w-2xl mx-auto">
           Fotografieren Sie Ihren Beleg – EasyBuch erkennt, sortiert und speichert ihn automatisch.
           Sparen Sie Zeit und behalten Sie den Überblick über Ihre Ausgaben.
         </p>

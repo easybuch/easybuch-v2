@@ -24,6 +24,8 @@ export default function BelegePage() {
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -61,10 +63,52 @@ export default function BelegePage() {
     }
   };
 
-  const filteredReceipts = receipts.filter((receipt) =>
-    receipt.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (receipt.vendor && receipt.vendor.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredReceipts = receipts.filter((receipt) => {
+    // Search filter
+    const matchesSearch = receipt.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (receipt.vendor && receipt.vendor.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // Date filter
+    let matchesDate = true;
+    if (dateFilter !== 'all') {
+      const receiptDate = new Date(receipt.created_at);
+      const now = new Date();
+      const diffInDays = (now.getTime() - receiptDate.getTime()) / (1000 * 60 * 60 * 24);
+      
+      if (dateFilter === 'last7days') {
+        matchesDate = diffInDays <= 7;
+      } else if (dateFilter === 'last30days') {
+        matchesDate = diffInDays <= 30;
+      } else if (dateFilter === 'last90days') {
+        matchesDate = diffInDays <= 90;
+      }
+    }
+    
+    // Category filter
+    const matchesCategory = categoryFilter === 'all' || receipt.category === categoryFilter;
+    
+    return matchesSearch && matchesDate && matchesCategory;
+  });
+
+  // All available categories from receipt-ocr.ts
+  const RECEIPT_CATEGORIES = [
+    'Büromaterial & Ausstattung',
+    'Fahrtkosten (Kraftstoff & Parkplatz)',
+    'Fahrtkosten (ÖPNV & Bahn)',
+    'Verpflegung & Bewirtung',
+    'Unterkunft & Reisen',
+    'Software & Lizenzen',
+    'Hardware & Elektronik',
+    'Telekommunikation & Internet',
+    'Marketing & Werbung',
+    'Website & Online-Dienste',
+    'Steuerberatung',
+    'Rechtsberatung',
+    'Versicherungen',
+    'Miete & Nebenkosten',
+    'Weiterbildung',
+    'Sonstiges',
+  ];
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('de-DE', {
@@ -167,7 +211,8 @@ export default function BelegePage() {
 
       {/* Search and Filter */}
       <Card className="mb-8">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col gap-4">
+          {/* Search Bar */}
           <div className="flex-1 relative">
             <Search
               size={20}
@@ -179,6 +224,45 @@ export default function BelegePage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+          </div>
+          
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Date Filter */}
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-text-secondary mb-1.5">
+                Upload-Datum
+              </label>
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-button bg-white text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors"
+              >
+                <option value="all">Alle</option>
+                <option value="last7days">Letzte 7 Tage</option>
+                <option value="last30days">Letzte 30 Tage</option>
+                <option value="last90days">Letzte 90 Tage</option>
+              </select>
+            </div>
+            
+            {/* Category Filter */}
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-text-secondary mb-1.5">
+                Kategorie
+              </label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-button bg-white text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors"
+              >
+                <option value="all">Alle Kategorien</option>
+                {RECEIPT_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </Card>
@@ -258,8 +342,11 @@ export default function BelegePage() {
       {!isLoading && !error && filteredReceipts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredReceipts.map((receipt) => (
-            <Card key={receipt.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-              <div className="p-6">
+            <Card 
+              key={receipt.id} 
+              className="hover:shadow-md transition-shadow duration-200 cursor-pointer"
+            >
+              <div className="p-6 flex flex-col h-full">
                 {/* File Type Badge */}
                 <div className="flex items-center gap-2 mb-4">
                   <div
@@ -278,14 +365,17 @@ export default function BelegePage() {
                 </div>
 
                 {/* File Name */}
-                <h3 className="font-semibold text-text-primary mb-2 truncate" title={receipt.file_name}>
+                <h3 className="font-semibold text-text-primary mb-3 truncate" title={receipt.file_name}>
                   {receipt.file_name}
                 </h3>
 
+                {/* Divider */}
+                <div className="border-t border-gray-100 mb-4" />
+
                 {/* Metadata */}
-                <div className="space-y-2 mb-4">
+                <div className="space-y-3 mb-8 flex-grow">
                   <div className="flex items-center gap-2 text-sm text-text-secondary">
-                    <Calendar size={16} />
+                    <Calendar size={16} className="text-brand" />
                     <span>
                       {receipt.receipt_date
                         ? formatDate(receipt.receipt_date)
@@ -293,7 +383,7 @@ export default function BelegePage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-text-secondary">
-                    <Coins size={16} />
+                    <Coins size={16} className="text-brand" />
                     <span>
                       {receipt.amount_gross
                         ? `${receipt.amount_gross.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
@@ -302,20 +392,20 @@ export default function BelegePage() {
                   </div>
                   {receipt.category && (
                     <div className="flex items-center gap-2 text-sm text-text-secondary">
-                      <Tag size={16} />
-                      <span>{receipt.category}</span>
+                      <Tag size={16} className="text-brand" />
+                      <span className="truncate">{receipt.category}</span>
                     </div>
                   )}
                   {receipt.vendor && (
                     <div className="flex items-center gap-2 text-sm text-text-secondary">
-                      <Store size={16} />
-                      <span>{receipt.vendor}</span>
+                      <Store size={16} className="text-brand" />
+                      <span className="truncate">{receipt.vendor}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-auto">
                   <Button
                     variant="primary"
                     className="flex-1 text-sm"
