@@ -152,7 +152,6 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf"
-            capture="environment"
             onChange={handleFileInputChange}
             style={{ display: 'none' }}
           />
