@@ -215,17 +215,17 @@ export default function BelegePage() {
             {/* Date Filter */}
             <div className="flex-1">
               <label className="block text-xs font-medium text-text-secondary mb-1.5">
-                {t('receipts.date')}
+                {t('receipts.uploadDate')}
               </label>
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-button bg-white text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors"
               >
-                <option value="all">{t('receipts.allCategories')}</option>
-                <option value="last7days">{t('receipts.date')}</option>
-                <option value="last30days">{t('receipts.date')}</option>
-                <option value="last90days">{t('receipts.date')}</option>
+                <option value="all">{t('receipts.allDates')}</option>
+                <option value="last7days">{t('receipts.last7days')}</option>
+                <option value="last30days">{t('receipts.last30days')}</option>
+                <option value="last90days">{t('receipts.last90days')}</option>
               </select>
             </div>
             
