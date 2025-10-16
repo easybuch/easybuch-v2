@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, Camera, X, FileText, ZoomIn, RefreshCw } from 'lucide-react';
+import { useLanguage } from '@/lib/language-context';
 import { cn } from '@/utils/cn';
 
 export interface UploadedFile {
@@ -24,15 +25,17 @@ const ACCEPTED_FILE_TYPES = {
 };
 
 export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUploadZoneProps) {
+  const { t } = useLanguage();
   const [localError, setLocalError] = useState<string | null>(null);
   const [showLightbox, setShowLightbox] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onDrop = useCallback(
     (acceptedFiles: File[], rejectedFiles: unknown[]) => {
       setLocalError(null);
 
       if (rejectedFiles.length > 0) {
-        setLocalError('Ungültiger Dateityp. Bitte nur JPG, PNG oder PDF hochladen.');
+        setLocalError(t('receipts.uploadError'));
         return;
       }
 
@@ -44,7 +47,7 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
 
       // Validate file size
       if (file.size > MAX_FILE_SIZE) {
-        setLocalError('Datei zu groß. Maximale Größe: 10MB');
+        setLocalError(t('receipts.uploadError'));
         return;
       }
 
@@ -70,7 +73,24 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
     accept: ACCEPTED_FILE_TYPES,
     maxFiles: 1,
     multiple: false,
+    noClick: true, // Disable default click to use custom handler
+    noKeyboard: false,
   });
+
+  // Custom click handler for better mobile support
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    fileInputRef.current?.click();
+  };
+
+  // Handle manual file input change
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const filesArray = Array.from(files);
+      onDrop(filesArray, []);
+    }
+  };
 
   const handleChangeFile = () => {
     onFileSelect(null);
@@ -115,6 +135,7 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
       {!uploadedFile ? (
         <div
           {...getRootProps()}
+          onClick={handleClick}
           className={cn(
             'relative rounded-card p-8 h-full',
             'transition-all duration-200 cursor-pointer',
@@ -126,7 +147,16 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
             displayError && 'bg-red-50'
           )}
         >
-          <input {...getInputProps()} />
+          {/* Hidden file input for better mobile support */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf"
+            capture="environment"
+            onChange={handleFileInputChange}
+            style={{ display: 'none' }}
+          />
+          <input {...getInputProps()} style={{ display: 'none' }} />
 
           {/* Icon */}
           <div className="mb-6">
@@ -148,13 +178,13 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
           {/* Text */}
           <div className="space-y-2">
             <p className="text-lg md:text-xl font-semibold text-text-primary">
-              {isDragActive ? 'Datei hier ablegen...' : 'Foto oder PDF hier ablegen'}
+              {isDragActive ? t('receipts.uploading') : t('receipts.dragDrop')}
             </p>
             <p className="text-sm md:text-base text-text-secondary">
-              oder klicken zum Auswählen
+              {t('receipts.dragDrop')}
             </p>
             <p className="text-xs md:text-sm text-text-footer mt-4">
-              Akzeptierte Formate: JPG, PNG, PDF • Max. 10MB
+              {t('receipts.supportedFormats')}
             </p>
           </div>
 
@@ -162,7 +192,7 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
           <div className="mt-6 md:hidden">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand/10 rounded-button">
               <Camera size={16} className="text-brand" />
-              <span className="text-xs text-brand font-medium">Kamera verfügbar</span>
+              <span className="text-xs text-brand font-medium">{t('receipts.uploadNew')}</span>
             </div>
           </div>
         </div>
@@ -174,7 +204,7 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
               <div className="w-full bg-gray-50 flex items-center justify-center p-8">
                 <img
                   src={uploadedFile.preview}
-                  alt="Beleg Vorschau"
+                  alt={t('receipts.viewDetails')}
                   className="max-h-[200px] md:max-h-[250px] w-auto rounded-button shadow-lg object-contain cursor-pointer hover:opacity-90 transition-opacity"
                   onClick={() => setShowLightbox(true)}
                 />
@@ -183,7 +213,7 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
               <button
                 onClick={() => setShowLightbox(true)}
                 className="absolute top-4 right-4 p-2 bg-white/90 hover:bg-white rounded-button shadow-md transition-all group"
-                aria-label="Bild vergrößern"
+                aria-label={t('receipts.viewDetails')}
               >
                 <ZoomIn size={20} className="text-text-secondary group-hover:text-brand" />
               </button>
@@ -224,7 +254,7 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
               <div className={cn('flex items-center gap-3', !isImage && 'flex-1')}>
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 rounded-pill">
                   <div className="w-2 h-2 rounded-full bg-green-600" />
-                  <span className="text-xs font-medium text-green-800">Bereit zum Speichern</span>
+                  <span className="text-xs font-medium text-green-800">{t('common.save')}</span>
                 </div>
               </div>
             </div>
@@ -237,7 +267,7 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors"
                 >
                   <RefreshCw size={16} />
-                  Anderes Bild wählen
+                  {t('receipts.uploadNew')}
                 </button>
               </div>
             )}
@@ -261,14 +291,14 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
           <button
             onClick={() => setShowLightbox(false)}
             className="absolute top-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-button transition-colors"
-            aria-label="Schließen"
+            aria-label={t('common.close')}
           >
             <X size={24} className="text-white" />
           </button>
           <div className="max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center">
             <img
               src={uploadedFile.preview}
-              alt="Beleg Vollansicht"
+              alt={t('receipts.viewDetails')}
               className="max-w-full max-h-full object-contain rounded-button"
               onClick={(e) => e.stopPropagation()}
             />

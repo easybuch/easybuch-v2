@@ -9,9 +9,11 @@ import { Card } from '@/components/atoms/Card';
 import { Upload, FileText, Euro } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
 
 export default function HomePage() {
-  const breadcrumbs = [{ label: 'Dashboard' }];
+  const { t } = useLanguage();
+  const breadcrumbs = [{ label: t('navigation.dashboard') }];
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [receiptCount, setReceiptCount] = useState<number>(0);
@@ -89,14 +91,13 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="max-w-4xl mx-auto text-center py-12 md:py-20">
         <h1 className="text-3xl md:text-section font-bold text-text-primary mb-8">
-          Willkommen bei EasyBuch
+          {t('dashboard.welcome')}
         </h1>
         <p className="text-lg md:text-xl text-text-secondary mb-5">
-          Ihre digitale Belegverwaltung für Selbständige und kleine Unternehmen
+          {t('dashboard.subtitle')}
         </p>
         <p className="text-base text-text-light mb-14 max-w-2xl mx-auto">
-          Fotografieren Sie Ihren Beleg – EasyBuch erkennt, sortiert und speichert ihn automatisch.
-          Sparen Sie Zeit und behalten Sie den Überblick über Ihre Ausgaben.
+          {t('dashboard.description')}
         </p>
 
         {/* Action Buttons */}
@@ -104,13 +105,13 @@ export default function HomePage() {
           <Link href="/upload" className="w-full sm:w-auto">
             <Button variant="primary" className="w-full min-w-[240px]">
               <Upload size={20} className="mr-2" />
-              Neuen Beleg hochladen
+              {t('receipts.uploadNew')}
             </Button>
           </Link>
           <Link href="/belege" className="w-full sm:w-auto">
             <Button variant="secondary" className="w-full min-w-[240px]">
               <FileText size={20} className="mr-2" />
-              Meine Belege
+              {t('navigation.receipts')}
             </Button>
           </Link>
         </div>
@@ -123,14 +124,14 @@ export default function HomePage() {
           <Card className="p-8">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <p className="text-sm text-text-footer mb-2">Gespeicherte Belege</p>
+                <p className="text-sm text-text-footer mb-2">{t('dashboard.totalReceipts')}</p>
                 <p className="text-4xl font-bold text-text-primary mb-3">
                   {isLoading ? '...' : receiptCount}
                 </p>
                 <div className="flex items-center gap-2 text-text-secondary">
                   <div className="w-2 h-2 rounded-full bg-brand"></div>
                   <p className="text-sm">
-                    {isLoading ? '...' : monthlyCount} diesen Monat hochgeladen
+                    {isLoading ? '...' : monthlyCount} {t('dashboard.thisMonth')}
                   </p>
                 </div>
               </div>
@@ -144,14 +145,14 @@ export default function HomePage() {
           <Card className="p-8">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <p className="text-sm text-text-footer mb-2">Gesamtausgaben</p>
+                <p className="text-sm text-text-footer mb-2">{t('dashboard.totalAmount')}</p>
                 <p className="text-4xl font-bold text-text-primary mb-3">
                   {isLoading ? '...' : `${totalAmount.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}
                 </p>
                 <div className="flex items-center gap-2 text-text-secondary">
                   <div className="w-2 h-2 rounded-full bg-green-600"></div>
                   <p className="text-sm">
-                    {isLoading ? '...' : `${monthlyAmount.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`} diesen Monat hochgeladen
+                    {isLoading ? '...' : `${monthlyAmount.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`} {t('dashboard.thisMonth')}
                   </p>
                 </div>
               </div>

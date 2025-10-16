@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
 import { Button } from '@/components/atoms/Button';
 import { Card } from '@/components/atoms/Card';
 import { Input } from '@/components/atoms/Input';
@@ -12,6 +13,7 @@ import { UserPlus, Loader2, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide
 export default function RegisterPage() {
   const router = useRouter();
   const { signUp, user, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -35,12 +37,12 @@ export default function RegisterPage() {
 
     // Validation
     if (password !== confirmPassword) {
-      setError('Passwörter stimmen nicht überein');
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
     if (password.length < 6) {
-      setError('Passwort muss mindestens 6 Zeichen lang sein');
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
@@ -51,7 +53,7 @@ export default function RegisterPage() {
 
       if (error) {
         if (error.message.includes('already registered')) {
-          setError('Diese E-Mail ist bereits registriert');
+          setError(t('auth.registerError'));
         } else {
           setError(error.message);
         }
@@ -64,7 +66,7 @@ export default function RegisterPage() {
         router.push('/login');
       }, 3000);
     } catch (err) {
-      setError('Ein unerwarteter Fehler ist aufgetreten');
+      setError(t('auth.registerError'));
       console.error('Registration error:', err);
     } finally {
       setIsSubmitting(false);
@@ -84,13 +86,13 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-brand mb-2">EasyBuch</h1>
-          <p className="text-text-secondary">Digitale Belegverwaltung</p>
+          <h1 className="text-4xl font-bold text-brand mb-2">{t('common.appName')}</h1>
+          <p className="text-text-secondary">{t('auth.registerSubtitle')}</p>
         </div>
 
         {/* Register Card */}
         <Card className="p-8">
-          <h2 className="text-2xl font-bold text-text-primary mb-6">Registrieren</h2>
+          <h2 className="text-2xl font-bold text-text-primary mb-6">{t('auth.register')}</h2>
 
           {/* Error Message */}
           {error && (
@@ -105,9 +107,9 @@ export default function RegisterPage() {
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-button flex items-center gap-3">
               <CheckCircle size={20} className="text-green-600 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-green-800">Registrierung erfolgreich!</p>
+                <p className="text-sm font-semibold text-green-800">{t('auth.checkEmail')}</p>
                 <p className="text-sm text-green-700">
-                  Bitte bestätigen Sie Ihre E-Mail. Sie werden weitergeleitet...
+                  {t('auth.confirmationSent')}
                 </p>
               </div>
             </div>
@@ -116,14 +118,14 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-2">
-                E-Mail
+                {t('auth.email')}
               </label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="ihre@email.de"
+                placeholder={t('auth.email')}
                 required
                 disabled={isSubmitting || success}
               />
@@ -134,7 +136,7 @@ export default function RegisterPage() {
                 htmlFor="password"
                 className="block text-sm font-medium text-text-primary mb-2"
               >
-                Passwort
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <Input
@@ -142,7 +144,7 @@ export default function RegisterPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mindestens 6 Zeichen"
+                  placeholder={t('auth.password')}
                   required
                   disabled={isSubmitting || success}
                   className="pr-12"
@@ -163,7 +165,7 @@ export default function RegisterPage() {
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-text-primary mb-2"
               >
-                Passwort bestätigen
+                {t('auth.confirmPassword')}
               </label>
               <div className="relative">
                 <Input
@@ -171,7 +173,7 @@ export default function RegisterPage() {
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Passwort wiederholen"
+                  placeholder={t('auth.confirmPassword')}
                   required
                   disabled={isSubmitting || success}
                   className="pr-12"
@@ -196,12 +198,12 @@ export default function RegisterPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 size={20} className="mr-2 animate-spin" />
-                  Wird registriert...
+                  {t('common.loading')}
                 </>
               ) : (
                 <>
                   <UserPlus size={20} className="mr-2" />
-                  Registrieren
+                  {t('auth.register')}
                 </>
               )}
             </Button>
@@ -210,9 +212,9 @@ export default function RegisterPage() {
           {/* Login Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-text-secondary">
-              Bereits ein Konto?{' '}
+              {t('auth.hasAccount')}{' '}
               <Link href="/login" className="text-brand font-medium hover:underline">
-                Jetzt anmelden
+                {t('auth.login')}
               </Link>
             </p>
           </div>
@@ -220,7 +222,7 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <p className="text-center text-sm text-text-footer mt-8">
-          © 2025 EasyBuch. Alle Rechte vorbehalten.
+          © 2025 {t('common.appName')}
         </p>
       </div>
     </div>

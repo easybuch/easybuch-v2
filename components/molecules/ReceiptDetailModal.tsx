@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { X, Download, Trash2, Save, Loader2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
+import { useLanguage } from '@/lib/language-context';
+import { RECEIPT_CATEGORIES, getCategoryTranslationKey } from '@/lib/category-mapping';
 import type { Receipt } from '@/lib/database.types';
 import { cn } from '@/utils/cn';
 
@@ -16,24 +18,6 @@ interface ReceiptDetailModalProps {
   signedUrl: string | null;
 }
 
-const CATEGORIES = [
-  'Büromaterial & Ausstattung',
-  'Fahrtkosten (Kraftstoff & Parkplatz)',
-  'Fahrtkosten (ÖPNV & Bahn)',
-  'Verpflegung & Bewirtung',
-  'Unterkunft & Reisen',
-  'Software & Lizenzen',
-  'Hardware & Elektronik',
-  'Telekommunikation & Internet',
-  'Marketing & Werbung',
-  'Website & Online-Dienste',
-  'Steuerberatung',
-  'Rechtsberatung',
-  'Versicherungen',
-  'Miete & Nebenkosten',
-  'Weiterbildung',
-  'Sonstiges',
-];
 
 export const ReceiptDetailModal = ({
   receipt,
@@ -43,6 +27,7 @@ export const ReceiptDetailModal = ({
   onDelete,
   signedUrl,
 }: ReceiptDetailModalProps) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     receipt_date: '',
     category: '',
@@ -90,7 +75,7 @@ export const ReceiptDetailModal = ({
       }, 2500);
     } catch (error) {
       console.error('Error saving receipt:', error);
-      alert('Fehler beim Speichern');
+      alert(t('receipts.uploadError'));
     } finally {
       setIsSaving(false);
     }
@@ -111,7 +96,7 @@ export const ReceiptDetailModal = ({
   };
 
   const handleDelete = async () => {
-    if (!confirm('Möchten Sie diesen Beleg wirklich löschen?')) return;
+    if (!confirm(t('common.delete'))) return;
 
     try {
       setIsDeleting(true);
@@ -119,7 +104,7 @@ export const ReceiptDetailModal = ({
       onClose();
     } catch (error) {
       console.error('Error deleting receipt:', error);
-      alert('Fehler beim Löschen');
+      alert(t('receipts.uploadError'));
     } finally {
       setIsDeleting(false);
     }
@@ -144,8 +129,8 @@ export const ReceiptDetailModal = ({
           <div className="bg-green-600 text-white px-6 py-4 rounded-button shadow-lg flex items-center gap-3">
             <CheckCircle size={24} className="flex-shrink-0 animate-pulse" />
             <div>
-              <p className="font-semibold">Erfolgreich gespeichert!</p>
-              <p className="text-sm text-green-100">Ihre Änderungen wurden übernommen.</p>
+              <p className="font-semibold">{t('receipts.uploadSuccess')}</p>
+              <p className="text-sm text-green-100">{t('common.save')}</p>
             </div>
           </div>
         </div>
@@ -154,11 +139,11 @@ export const ReceiptDetailModal = ({
       <div className="bg-white rounded-card shadow-card-hover w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-text-primary">Beleg Details</h2>
+          <h2 className="text-2xl font-bold text-text-primary">{t('receipts.receiptDetails')}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-button transition-colors"
-            aria-label="Schließen"
+            aria-label={t('common.close')}
           >
             <X size={24} className="text-text-secondary" />
           </button>
@@ -169,7 +154,7 @@ export const ReceiptDetailModal = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left: Preview */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-text-primary">Vorschau</h3>
+              <h3 className="text-lg font-semibold text-text-primary">{t('receipts.viewDetails')}</h3>
               <div className="bg-gray-50 rounded-card p-4 min-h-[400px] flex items-center justify-center">
                 {signedUrl ? (
                   receipt.file_type === 'pdf' ? (
@@ -190,10 +175,9 @@ export const ReceiptDetailModal = ({
                 )}
               </div>
               <div className="text-sm text-text-footer">
-                <p>Dateiname: {receipt.file_name}</p>
-                <p>Typ: {receipt.file_type.toUpperCase()}</p>
+                <p>{receipt.file_name}</p>
+                <p>{receipt.file_type.toUpperCase()}</p>
                 <p>
-                  Hochgeladen:{' '}
                   {new Date(receipt.created_at).toLocaleDateString('de-DE', {
                     day: '2-digit',
                     month: '2-digit',
@@ -207,38 +191,38 @@ export const ReceiptDetailModal = ({
 
             {/* Right: Form */}
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-text-primary">Beleg-Informationen</h3>
+              <h3 className="text-lg font-semibold text-text-primary">{t('receipts.extractedData')}</h3>
 
               {/* Amount Breakdown - READ ONLY */}
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-2">
-                  Betragsaufschlüsselung
+                  {t('receipts.amountBreakdown')}
                 </label>
                 <div className="bg-blue-50 border border-blue-200 rounded-button p-4 space-y-2">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-text-secondary">Netto-Betrag:</span>
+                    <span className="text-text-secondary">{t('receipts.amountNet')}:</span>
                     <span className="font-medium text-text-primary">{formatAmount(receipt.amount_net)}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-text-secondary">
-                      MwSt. {formatTaxRate(receipt.tax_rate)}:
+                      {t('receipts.amountTax')} {formatTaxRate(receipt.tax_rate)}:
                     </span>
                     <span className="font-medium text-text-primary">{formatAmount(receipt.amount_tax)}</span>
                   </div>
                   <div className="flex justify-between items-center text-base pt-2 border-t border-blue-300">
-                    <span className="font-semibold text-text-primary">Brutto-Betrag:</span>
+                    <span className="font-semibold text-text-primary">{t('receipts.amountGross')}:</span>
                     <span className="font-bold text-lg text-brand">{formatAmount(receipt.amount_gross)}</span>
                   </div>
                 </div>
                 <p className="text-xs text-text-footer mt-2">
-                  Beträge werden automatisch aus dem Beleg ausgelesen und können nicht manuell geändert werden.
+                  {t('receipts.amountReadOnly')}
                 </p>
               </div>
 
               {/* Date */}
               <div>
                 <label htmlFor="date" className="block text-sm font-medium text-text-primary mb-2">
-                  Belegdatum
+                  {t('receipts.receiptDate')}
                 </label>
                 <Input
                   id="date"
@@ -251,7 +235,7 @@ export const ReceiptDetailModal = ({
               {/* Category */}
               <div>
                 <label htmlFor="category" className="block text-sm font-medium text-text-primary mb-2">
-                  Kategorie
+                  {t('receipts.category')}
                 </label>
                 <select
                   id="category"
@@ -263,10 +247,10 @@ export const ReceiptDetailModal = ({
                     'text-text-primary bg-white transition-all'
                   )}
                 >
-                  <option value="">Kategorie auswählen...</option>
-                  {CATEGORIES.map((cat) => (
+                  <option value="">{t('receipts.category')}</option>
+                  {RECEIPT_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
-                      {cat}
+                      {t(getCategoryTranslationKey(cat))}
                     </option>
                   ))}
                 </select>
@@ -275,12 +259,12 @@ export const ReceiptDetailModal = ({
               {/* Vendor */}
               <div>
                 <label htmlFor="vendor" className="block text-sm font-medium text-text-primary mb-2">
-                  Lieferant / Händler
+                  {t('receipts.merchant')}
                 </label>
                 <Input
                   id="vendor"
                   type="text"
-                  placeholder="z.B. Amazon, Rewe, etc."
+                  placeholder={t('receipts.merchant')}
                   value={formData.vendor}
                   onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
                 />
@@ -289,12 +273,12 @@ export const ReceiptDetailModal = ({
               {/* Notes */}
               <div>
                 <label htmlFor="notes" className="block text-sm font-medium text-text-primary mb-2">
-                  Notizen (optional)
+                  {t('receipts.notes')}
                 </label>
                 <textarea
                   id="notes"
                   rows={4}
-                  placeholder="Zusätzliche Informationen..."
+                  placeholder={t('receipts.notes')}
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   className={cn(
@@ -320,12 +304,12 @@ export const ReceiptDetailModal = ({
             {isDeleting ? (
               <>
                 <Loader2 size={20} className="mr-2 animate-spin" />
-                Wird gelöscht...
+                {t('common.loading')}
               </>
             ) : (
               <>
                 <Trash2 size={20} className="mr-2" />
-                Löschen
+                {t('common.delete')}
               </>
             )}
           </Button>
@@ -338,7 +322,7 @@ export const ReceiptDetailModal = ({
               className="w-full sm:w-auto"
             >
               <Download size={20} className="mr-2" />
-              Herunterladen
+              {t('common.save')}
             </Button>
             <Button
               variant="primary"
@@ -349,12 +333,12 @@ export const ReceiptDetailModal = ({
               {isSaving ? (
                 <>
                   <Loader2 size={20} className="mr-2 animate-spin" />
-                  Wird gespeichert...
+                  {t('common.loading')}
                 </>
               ) : (
                 <>
                   <Save size={20} className="mr-2" />
-                  Speichern
+                  {t('common.save')}
                 </>
               )}
             </Button>

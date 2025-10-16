@@ -9,12 +9,15 @@ import { FileUploadZone, UploadedFile } from '@/components/molecules/FileUploadZ
 import { Save, X, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
+import { getCategoryTranslationKey } from '@/lib/category-mapping';
 import type { ReceiptInsert } from '@/lib/database.types';
 import type { ReceiptData } from '@/lib/receipt-ocr';
 
 export default function UploadPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,8 +34,8 @@ export default function UploadPage() {
   }, [user, authLoading, router]);
 
   const breadcrumbs = [
-    { label: 'Dashboard', href: '/' },
-    { label: 'Neuen Beleg hochladen' },
+    { label: t('navigation.dashboard'), href: '/' },
+    { label: t('receipts.uploadNew') },
   ];
 
   const handleFileSelect = async (file: UploadedFile | null) => {
@@ -64,12 +67,12 @@ export default function UploadPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Fehler bei der Datenextraktion');
+        throw new Error(result.error || t('receipts.uploadError'));
       }
 
       setExtractedData(result.data);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Fehler bei der Datenextraktion';
+      const errorMessage = err instanceof Error ? err.message : t('receipts.uploadError');
       setExtractionError(errorMessage);
       console.error('Extraction error:', err);
     } finally {
@@ -142,7 +145,7 @@ export default function UploadPage() {
       }, 2000);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : 'Fehler beim Speichern des Belegs.';
+        err instanceof Error ? err.message : t('receipts.uploadError');
       setError(errorMessage);
       console.error('Upload error:', err);
     } finally {
@@ -160,10 +163,10 @@ export default function UploadPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
           <h1 className="text-3xl md:text-section font-bold text-text-primary mb-2">
-            Neuen Beleg hochladen
+            {t('receipts.uploadNew')}
           </h1>
           <p className="text-text-secondary">
-            Laden Sie ein Foto oder PDF Ihres Belegs hoch. Die Informationen werden automatisch erkannt.
+            {t('receipts.dragDrop')}
           </p>
         </div>
       </div>
@@ -185,9 +188,9 @@ export default function UploadPage() {
           {isExtracting && (
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <Loader2 size={48} className="text-brand animate-spin mb-4" />
-              <p className="font-semibold text-text-primary mb-2">Beleg wird analysiert...</p>
+              <p className="font-semibold text-text-primary mb-2">{t('receipts.analyzing')}</p>
               <p className="text-sm text-text-secondary">
-                Betrag, Datum und weitere Informationen werden automatisch extrahiert
+                {t('receipts.extractedData')}
               </p>
             </div>
           )}
@@ -197,18 +200,18 @@ export default function UploadPage() {
               <div className="p-6 w-full bg-green-50">
                 <div className="flex items-center gap-2 mb-6">
                   <Sparkles size={20} className="text-brand" />
-                  <h3 className="font-semibold text-text-primary">Erkannte Daten</h3>
+                  <h3 className="font-semibold text-text-primary">{t('receipts.extractedData')}</h3>
                 </div>
                 <div className="space-y-4">
                   {extractedData.lieferant && (
                     <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">Händler/Lieferant</p>
+                      <p className="text-xs text-text-footer mb-1">{t('receipts.merchant')}</p>
                       <p className="font-medium text-text-primary">{extractedData.lieferant}</p>
                     </div>
                   )}
                   {extractedData.betrag_brutto && (
                     <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">Bruttobetrag</p>
+                      <p className="text-xs text-text-footer mb-1">{t('receipts.amount')}</p>
                       <p className="font-semibold text-xl text-brand">
                         {extractedData.betrag_brutto.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                       </p>
@@ -216,7 +219,7 @@ export default function UploadPage() {
                   )}
                   {extractedData.betrag_netto && (
                     <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">Nettobetrag</p>
+                      <p className="text-xs text-text-footer mb-1">{t('receipts.amount')}</p>
                       <p className="font-medium text-text-primary">
                         {extractedData.betrag_netto.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                       </p>
@@ -224,7 +227,7 @@ export default function UploadPage() {
                   )}
                   {extractedData.mwst_betrag && (
                     <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">MwSt.-Betrag</p>
+                      <p className="text-xs text-text-footer mb-1">{t('receipts.amount')}</p>
                       <p className="font-medium text-text-primary">
                         {extractedData.mwst_betrag.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                       </p>
@@ -232,13 +235,13 @@ export default function UploadPage() {
                   )}
                   {extractedData.mwst_satz && (
                     <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">MwSt.-Satz</p>
+                      <p className="text-xs text-text-footer mb-1">{t('receipts.amount')}</p>
                       <p className="font-medium text-text-primary">{extractedData.mwst_satz}%</p>
                     </div>
                   )}
                   {extractedData.datum && (
                     <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">Datum</p>
+                      <p className="text-xs text-text-footer mb-1">{t('receipts.date')}</p>
                       <p className="font-medium text-text-primary">
                         {new Date(extractedData.datum).toLocaleDateString('de-DE')}
                       </p>
@@ -246,8 +249,8 @@ export default function UploadPage() {
                   )}
                   {extractedData.kategorie && (
                     <div className="pb-3">
-                      <p className="text-xs text-text-footer mb-1">Kategorie</p>
-                      <p className="font-medium text-text-primary">{extractedData.kategorie}</p>
+                      <p className="text-xs text-text-footer mb-1">{t('receipts.category')}</p>
+                      <p className="font-medium text-text-primary">{t(getCategoryTranslationKey(extractedData.kategorie))}</p>
                     </div>
                   )}
                 </div>
@@ -258,10 +261,10 @@ export default function UploadPage() {
           {extractionError && !isExtracting && (
             <div className="p-8 text-center">
               <AlertCircle size={48} className="text-yellow-600 mx-auto mb-4" />
-              <h3 className="font-semibold text-text-primary mb-2">Automatische Erkennung fehlgeschlagen</h3>
+              <h3 className="font-semibold text-text-primary mb-2">{t('receipts.uploadError')}</h3>
               <p className="text-sm text-text-secondary mb-3">{extractionError}</p>
               <p className="text-sm text-text-footer">
-                Sie können den Beleg trotzdem speichern und die Daten später manuell ergänzen.
+                {t('receipts.extractedData')}
               </p>
             </div>
           )}
@@ -270,9 +273,9 @@ export default function UploadPage() {
           {!uploadedFile && !isExtracting && !extractedData && !extractionError && (
             <div className="p-8 text-center">
               <Sparkles size={48} className="text-gray-300 mx-auto mb-4" />
-              <p className="text-text-secondary mb-2">Erkannte Daten erscheinen hier</p>
+              <p className="text-text-secondary mb-2">{t('receipts.extractedData')}</p>
               <p className="text-sm text-text-footer">
-                Laden Sie einen Beleg hoch, um die automatische Erkennung zu starten
+                {t('receipts.dragDrop')}
               </p>
             </div>
           )}
@@ -285,7 +288,7 @@ export default function UploadPage() {
           <div className="p-4 flex items-center gap-3">
             <AlertCircle size={20} className="text-yellow-600 flex-shrink-0" />
             <p className="text-sm text-yellow-800">
-              Die automatische Erkennung war nicht erfolgreich. Sie können den Beleg trotzdem speichern.
+              {t('receipts.uploadError')}
             </p>
           </div>
         </Card>
@@ -296,7 +299,7 @@ export default function UploadPage() {
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-button flex items-center gap-3">
           <AlertCircle size={24} className="text-red-600 flex-shrink-0" />
           <div>
-            <p className="font-semibold text-red-800">Fehler beim Hochladen</p>
+            <p className="font-semibold text-red-800">{t('receipts.uploadError')}</p>
             <p className="text-sm text-red-700">{error}</p>
           </div>
         </div>
@@ -307,8 +310,8 @@ export default function UploadPage() {
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-button flex items-center gap-3">
           <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
           <div>
-            <p className="font-semibold text-green-800">Beleg erfolgreich gespeichert!</p>
-            <p className="text-sm text-green-700">Sie werden zu Ihren Belegen weitergeleitet...</p>
+            <p className="font-semibold text-green-800">{t('receipts.uploadSuccess')}</p>
+            <p className="text-sm text-green-700">{t('common.loading')}</p>
           </div>
         </div>
       )}
@@ -322,7 +325,7 @@ export default function UploadPage() {
           className="sm:w-auto"
         >
           <X size={20} className="mr-2" />
-          Abbrechen
+          {t('common.cancel')}
         </Button>
         <Button
           variant="primary"
@@ -331,7 +334,7 @@ export default function UploadPage() {
           className="sm:w-auto"
         >
           <Save size={20} className="mr-2" />
-          {isSubmitting ? 'Wird gespeichert...' : 'Beleg speichern'}
+          {isSubmitting ? t('common.loading') : t('common.save')}
         </Button>
       </div>
     </DashboardLayout>

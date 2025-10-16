@@ -5,19 +5,21 @@ import Link from 'next/link';
 import { Home, FileText, Menu, X } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
 
 export interface SidebarProps {
   className?: string;
 }
 
-const menuItems = [
-  { icon: Home, label: 'Dashboard', href: '/' },
-  { icon: FileText, label: 'Meine Belege', href: '/belege' },
-];
-
 export function Sidebar({ className }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
+  const { t } = useLanguage();
+
+  const menuItems = [
+    { icon: Home, label: t('navigation.dashboard'), href: '/' },
+    { icon: FileText, label: t('navigation.receipts'), href: '/belege' },
+  ];
 
   const getUserInitial = () => {
     return user?.email?.charAt(0).toUpperCase() || 'U';
@@ -59,7 +61,7 @@ export function Sidebar({ className }: SidebarProps) {
         {/* Logo */}
         <div className="h-20 flex items-center justify-center border-b border-gray-200">
           <Link href="/" className="text-2xl font-bold text-brand hover:text-brand/80 transition-colors">
-            EasyBuch
+            {t('common.appName')}
           </Link>
         </div>
 

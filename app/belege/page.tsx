@@ -11,10 +11,13 @@ import { Input } from '@/components/atoms/Input';
 import { ReceiptDetailModal } from '@/components/molecules/ReceiptDetailModal';
 import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
+import { RECEIPT_CATEGORIES, getCategoryTranslationKey } from '@/lib/category-mapping';
 import type { Receipt } from '@/lib/database.types';
 
 export default function BelegePage() {
-  const breadcrumbs = [{ label: 'Dashboard', href: '/' }, { label: 'Meine Belege' }];
+  const { t } = useLanguage();
+  const breadcrumbs = [{ label: t('navigation.dashboard'), href: '/' }, { label: t('navigation.receipts') }];
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
@@ -57,7 +60,7 @@ export default function BelegePage() {
       setReceipts(data || []);
     } catch (err) {
       console.error('Error fetching receipts:', err);
-      setError('Fehler beim Laden der Belege');
+      setError(t('receipts.uploadError'));
     } finally {
       setIsLoading(false);
     }
@@ -90,25 +93,6 @@ export default function BelegePage() {
     return matchesSearch && matchesDate && matchesCategory;
   });
 
-  // All available categories from receipt-ocr.ts
-  const RECEIPT_CATEGORIES = [
-    'Büromaterial & Ausstattung',
-    'Fahrtkosten (Kraftstoff & Parkplatz)',
-    'Fahrtkosten (ÖPNV & Bahn)',
-    'Verpflegung & Bewirtung',
-    'Unterkunft & Reisen',
-    'Software & Lizenzen',
-    'Hardware & Elektronik',
-    'Telekommunikation & Internet',
-    'Marketing & Werbung',
-    'Website & Online-Dienste',
-    'Steuerberatung',
-    'Rechtsberatung',
-    'Versicherungen',
-    'Miete & Nebenkosten',
-    'Weiterbildung',
-    'Sonstiges',
-  ];
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('de-DE', {
@@ -136,7 +120,7 @@ export default function BelegePage() {
       }
     } catch (err) {
       console.error('Error generating signed URL:', err);
-      alert('Fehler beim Öffnen der Datei');
+      alert(t('receipts.uploadError'));
     }
   };
 
@@ -195,16 +179,16 @@ export default function BelegePage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
           <h1 className="text-3xl md:text-section font-bold text-text-primary mb-2">
-            Meine Belege
+            {t('receipts.title')}
           </h1>
           <p className="text-text-secondary">
-            Verwalten und durchsuchen Sie Ihre hochgeladenen Belege
+            {t('receipts.title')}
           </p>
         </div>
         <Link href="/upload">
           <Button variant="primary" className="mt-4 md:mt-0">
             <Upload size={20} className="mr-2" />
-            Neuen Beleg hochladen
+            {t('receipts.uploadNew')}
           </Button>
         </Link>
       </div>
@@ -219,7 +203,7 @@ export default function BelegePage() {
               className="absolute left-4 top-1/2 -translate-y-1/2 text-text-footer"
             />
             <Input
-              placeholder="Nach Dateiname oder Händler/Lieferant suchen..."
+              placeholder={t('receipts.filterByCategory')}
               className="pl-12"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -231,34 +215,34 @@ export default function BelegePage() {
             {/* Date Filter */}
             <div className="flex-1">
               <label className="block text-xs font-medium text-text-secondary mb-1.5">
-                Upload-Datum
+                {t('receipts.date')}
               </label>
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-button bg-white text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors"
               >
-                <option value="all">Alle</option>
-                <option value="last7days">Letzte 7 Tage</option>
-                <option value="last30days">Letzte 30 Tage</option>
-                <option value="last90days">Letzte 90 Tage</option>
+                <option value="all">{t('receipts.allCategories')}</option>
+                <option value="last7days">{t('receipts.date')}</option>
+                <option value="last30days">{t('receipts.date')}</option>
+                <option value="last90days">{t('receipts.date')}</option>
               </select>
             </div>
             
             {/* Category Filter */}
             <div className="flex-1">
               <label className="block text-xs font-medium text-text-secondary mb-1.5">
-                Kategorie
+                {t('receipts.category')}
               </label>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-button bg-white text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors"
               >
-                <option value="all">Alle Kategorien</option>
+                <option value="all">{t('receipts.allCategories')}</option>
                 {RECEIPT_CATEGORIES.map((category) => (
                   <option key={category} value={category}>
-                    {category}
+                    {t(getCategoryTranslationKey(category))}
                   </option>
                 ))}
               </select>
@@ -271,7 +255,7 @@ export default function BelegePage() {
       {isLoading && (
         <Card className="text-center py-16">
           <Loader2 size={48} className="mx-auto mb-4 text-brand animate-spin" />
-          <p className="text-text-secondary">Belege werden geladen...</p>
+          <p className="text-text-secondary">{t('common.loading')}</p>
         </Card>
       )}
 
@@ -281,7 +265,7 @@ export default function BelegePage() {
           <div className="max-w-md mx-auto">
             <p className="text-red-600 mb-4">{error}</p>
             <Button variant="secondary" onClick={fetchReceipts}>
-              Erneut versuchen
+              {t('common.cancel')}
             </Button>
           </div>
         </Card>
@@ -294,15 +278,15 @@ export default function BelegePage() {
             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-brand/10 flex items-center justify-center">
               <FileText size={48} className="text-brand" />
             </div>
-            <CardTitle className="mb-4">Noch keine Belege vorhanden</CardTitle>
+            <CardTitle className="mb-4">{t('receipts.noReceipts')}</CardTitle>
             <CardContent>
               <p className="text-text-secondary mb-6">
-                Laden Sie Ihren ersten Beleg hoch, um mit der digitalen Belegverwaltung zu starten.
+                {t('dashboard.uploadFirst')}
               </p>
               <Link href="/upload">
                 <Button variant="primary">
                   <Upload size={20} className="mr-2" />
-                  Ersten Beleg hochladen
+                  {t('receipts.uploadNew')}
                 </Button>
               </Link>
             </CardContent>
@@ -315,10 +299,10 @@ export default function BelegePage() {
         <Card className="text-center py-16">
           <div className="max-w-md mx-auto">
             <p className="text-text-secondary mb-4">
-              Keine Belege gefunden für &quot;{searchQuery}&quot;
+              {t('receipts.noReceipts')}
             </p>
             <Button variant="secondary" onClick={() => setSearchQuery('')}>
-              Suche zurücksetzen
+              {t('common.cancel')}
             </Button>
           </div>
         </Card>
@@ -406,7 +390,7 @@ export default function BelegePage() {
                   {receipt.category && (
                     <div className="flex items-center gap-2 text-sm text-text-secondary">
                       <Tag size={16} className="text-brand" />
-                      <span className="truncate">{receipt.category}</span>
+                      <span className="truncate">{t(getCategoryTranslationKey(receipt.category))}</span>
                     </div>
                   )}
                 </div>
@@ -418,7 +402,7 @@ export default function BelegePage() {
                     className="flex-1 text-sm"
                     onClick={() => handleViewReceipt(receipt)}
                   >
-                    Details
+                    {t('receipts.viewDetails')}
                   </Button>
                 </div>
               </div>

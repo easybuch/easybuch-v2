@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { ChevronRight, User, LogOut } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
+import { LanguageSwitcher } from '@/components/atoms/LanguageSwitcher';
 
 export interface HeaderProps {
   breadcrumbs?: { label: string; href?: string }[];
@@ -15,6 +17,7 @@ export function Header({ breadcrumbs = [], className }: HeaderProps) {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
+  const { t } = useLanguage();
 
   const handleLogout = async () => {
     await signOut();
@@ -22,7 +25,7 @@ export function Header({ breadcrumbs = [], className }: HeaderProps) {
   };
 
   const getUserEmail = () => {
-    return user?.email?.split('@')[0] || 'Benutzer';
+    return user?.email?.split('@')[0] || t('common.user');
   };
 
   return (
@@ -54,6 +57,9 @@ export function Header({ breadcrumbs = [], className }: HeaderProps) {
 
       {/* User Actions */}
       <div className="flex items-center gap-4">
+        {/* Language Switcher */}
+        <LanguageSwitcher />
+        
         {/* User Dropdown */}
         <div className="relative">
           <button
@@ -86,7 +92,7 @@ export function Header({ breadcrumbs = [], className }: HeaderProps) {
                   className="w-full px-4 py-2 text-left text-sm text-text-secondary hover:bg-gray-50 flex items-center gap-2"
                 >
                   <LogOut size={16} />
-                  Abmelden
+                  {t('common.logout')}
                 </button>
               </div>
             </>
