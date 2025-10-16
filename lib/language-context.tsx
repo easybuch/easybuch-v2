@@ -39,6 +39,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Translation function with nested key support
   const t = (key: string): string => {
     const keys = key.split('.');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let value: any = messages[locale];
 
     for (const k of keys) {

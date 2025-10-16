@@ -65,7 +65,7 @@ export function FileUploadZone({ onFileSelect, uploadedFile, error }: FileUpload
         onFileSelect({ file });
       }
     },
-    [onFileSelect]
+    [onFileSelect, t]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
