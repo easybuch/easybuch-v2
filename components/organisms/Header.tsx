@@ -30,11 +30,12 @@ export function Header({ breadcrumbs = [], className }: HeaderProps) {
       className={cn(
         'h-20 bg-white border-b border-gray-200',
         'flex items-center justify-between px-6',
+        'sticky top-0 z-30',
         className
       )}
     >
       {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex items-center gap-2 text-sm ml-16 lg:ml-0">
         {breadcrumbs.map((crumb, index) => (
           <div key={index} className="flex items-center gap-2">
             {index > 0 && <ChevronRight size={16} className="text-text-footer" />}

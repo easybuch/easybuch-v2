@@ -32,7 +32,7 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-brand text-white rounded-button"
+        className="lg:hidden fixed top-5 left-4 z-50 p-2 bg-brand text-white rounded-button shadow-md"
         aria-label="Toggle Menu"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
