@@ -1,9 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
+import sharp from 'sharp';
 
 // Initialize Anthropic client
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 });
+
+// Anthropic API has a 5MB limit for images
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 
 export interface ReceiptData {
   betrag_netto: number | null;
@@ -38,6 +42,75 @@ export const RECEIPT_CATEGORIES = [
 export type ReceiptCategory = typeof RECEIPT_CATEGORIES[number];
 
 /**
+ * Compresses an image buffer to meet Anthropic's 5MB size limit
+ * @param buffer - The original image buffer
+ * @param mimeType - The MIME type of the image
+ * @returns Compressed image buffer and its MIME type
+ */
+async function compressImageIfNeeded(
+  buffer: Buffer,
+  mimeType: string
+): Promise<{ buffer: Buffer; mimeType: string }> {
+  // Skip compression for PDFs
+  if (mimeType === 'application/pdf') {
+    return { buffer, mimeType };
+  }
+
+  // Check if compression is needed
+  const base64Size = Math.ceil((buffer.length * 4) / 3); // Base64 is ~33% larger
+  
+  if (base64Size <= MAX_IMAGE_SIZE) {
+    return { buffer, mimeType };
+  }
+
+  console.log(`Image too large (${(base64Size / 1024 / 1024).toFixed(2)}MB), compressing...`);
+
+  try {
+    // Start with 85% quality
+    let quality = 85;
+    let compressedBuffer = buffer;
+    let compressedSize = base64Size;
+
+    // Iteratively reduce quality until we're under the limit
+    while (compressedSize > MAX_IMAGE_SIZE && quality > 20) {
+      compressedBuffer = await sharp(buffer)
+        .jpeg({ quality, mozjpeg: true })
+        .toBuffer();
+      
+      compressedSize = Math.ceil((compressedBuffer.length * 4) / 3);
+      
+      console.log(`Compressed to ${(compressedSize / 1024 / 1024).toFixed(2)}MB at ${quality}% quality`);
+      
+      if (compressedSize > MAX_IMAGE_SIZE) {
+        quality -= 10;
+      }
+    }
+
+    // If still too large, resize the image
+    if (compressedSize > MAX_IMAGE_SIZE) {
+      console.log('Still too large, resizing image...');
+      const metadata = await sharp(buffer).metadata();
+      const currentWidth = metadata.width || 2000;
+      const newWidth = Math.floor(currentWidth * 0.8); // Reduce by 20%
+
+      compressedBuffer = await sharp(buffer)
+        .resize(newWidth, null, { withoutEnlargement: true })
+        .jpeg({ quality: 80, mozjpeg: true })
+        .toBuffer();
+
+      compressedSize = Math.ceil((compressedBuffer.length * 4) / 3);
+      console.log(`Resized to ${(compressedSize / 1024 / 1024).toFixed(2)}MB`);
+    }
+
+    return { buffer: compressedBuffer, mimeType: 'image/jpeg' };
+  } catch (error) {
+    console.error('Error compressing image:', error);
+    // Return original if compression fails
+    return { buffer, mimeType };
+  }
+}
+
+/**
  * Extracts receipt data from an image or PDF using Claude 3.5 Sonnet
  * @param fileBuffer - The file buffer (image or PDF)
  * @param mimeType - The MIME type of the file (e.g., 'image/jpeg', 'application/pdf')
@@ -53,24 +126,28 @@ export async function extractReceiptData(
       throw new Error('ANTHROPIC_API_KEY is not configured');
     }
 
+    // Compress image if needed to meet Anthropic's 5MB limit
+    const { buffer: processedBuffer, mimeType: processedMimeType } = 
+      await compressImageIfNeeded(fileBuffer, mimeType);
+
     // Convert buffer to base64
-    const base64Data = fileBuffer.toString('base64');
+    const base64Data = processedBuffer.toString('base64');
 
     // Determine media type for Claude
     // Note: Claude API supports PDFs via document type, not image type
     let mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
     let contentType: 'image' | 'document' = 'image';
     
-    if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
+    if (processedMimeType === 'image/jpeg' || processedMimeType === 'image/jpg') {
       mediaType = 'image/jpeg';
-    } else if (mimeType === 'image/png') {
+    } else if (processedMimeType === 'image/png') {
       mediaType = 'image/png';
-    } else if (mimeType === 'application/pdf') {
+    } else if (processedMimeType === 'application/pdf') {
       // For PDFs, we'll use document type
       mediaType = 'image/png'; // placeholder, will use document type
       contentType = 'document';
     } else {
-      throw new Error(`Unsupported file type: ${mimeType}`);
+      throw new Error(`Unsupported file type: ${processedMimeType}`);
     }
 
     // Create the prompt for Claude
