@@ -36,6 +36,16 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return null;
+  }
+
+  // Don't render if not authenticated
+  if (!user) {
+    return null;
+  }
+
   const fetchStatistics = async () => {
     if (!user) return;
 

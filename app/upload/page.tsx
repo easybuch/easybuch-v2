@@ -11,6 +11,7 @@ import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
 import { getCategoryTranslationKey } from '@/lib/category-mapping';
+import { generateFileHash } from '@/utils/file-hash';
 import type { ReceiptInsert } from '@/lib/database.types';
 import type { ReceiptData } from '@/lib/receipt-ocr';
 
@@ -25,6 +26,7 @@ export default function UploadPage() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedData, setExtractedData] = useState<ReceiptData | null>(null);
   const [extractionError, setExtractionError] = useState<string | null>(null);
+  const [isDuplicate, setIsDuplicate] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -38,16 +40,56 @@ export default function UploadPage() {
     { label: t('receipts.uploadNew') },
   ];
 
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return null;
+  }
+
+  // Don't render if not authenticated
+  if (!user) {
+    return null;
+  }
+
   const handleFileSelect = async (file: UploadedFile | null) => {
     setUploadedFile(file);
     setError(null);
     setShowSuccess(false);
     setExtractedData(null);
     setExtractionError(null);
+    setIsDuplicate(false);
 
-    // Automatically extract data when file is selected
+    // Check for duplicates and extract data when file is selected
     if (file) {
+      await checkForDuplicate(file);
       await extractReceiptData(file);
+    }
+  };
+
+  const checkForDuplicate = async (file: UploadedFile) => {
+    if (!user) return;
+
+    try {
+      // Generate hash for the uploaded file
+      const fileHash = await generateFileHash(file.file);
+
+      // Check if a receipt with this hash already exists for this user
+      const { data: existingReceipts, error: checkError } = await supabase
+        .from('receipts')
+        .select('id, file_name, created_at')
+        .eq('user_id', user.id)
+        .eq('file_hash', fileHash)
+        .limit(1);
+
+      if (checkError) {
+        console.error('Error checking for duplicates:', checkError);
+        return;
+      }
+
+      if (existingReceipts && existingReceipts.length > 0) {
+        setIsDuplicate(true);
+      }
+    } catch (err) {
+      console.error('Error generating file hash:', err);
     }
   };
 
@@ -110,13 +152,17 @@ export default function UploadPage() {
       // 3. Determine file type
       const fileType: 'image' | 'pdf' = file.type.includes('pdf') ? 'pdf' : 'image';
 
-      // 4. Create database entry with extracted data
+      // 4. Generate file hash for duplicate detection
+      const fileHash = await generateFileHash(file);
+
+      // 5. Create database entry with extracted data
       const receiptData: ReceiptInsert = {
         user_id: user.id,
         file_url: storagePath, // Store path, not URL
         file_name: file.name,
         file_type: fileType,
         file_size: file.size,
+        file_hash: fileHash,
         processed: extractedData ? true : false,
         amount_net: extractedData?.betrag_netto ?? null,
         amount_tax: extractedData?.mwst_betrag ?? null,
@@ -180,6 +226,23 @@ export default function UploadPage() {
               uploadedFile={uploadedFile}
               error={error}
             />
+            
+            {/* Duplicate Warning */}
+            {isDuplicate && uploadedFile && (
+              <div className="mt-4 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-button">
+                <div className="flex items-start gap-3">
+                  <AlertCircle size={24} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-yellow-900 mb-1">
+                      {t('receipts.duplicateReceipt')}
+                    </h4>
+                    <p className="text-sm text-yellow-800">
+                      {t('receipts.duplicateReceiptMessage')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </Card>
 
         {/* Right Column: Extracted Data or Status */}
@@ -211,7 +274,7 @@ export default function UploadPage() {
                   )}
                   {extractedData.betrag_brutto && (
                     <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">{t('receipts.amount')}</p>
+                      <p className="text-xs text-text-footer mb-1">{t('receipts.amountGross')}</p>
                       <p className="font-semibold text-xl text-brand">
                         {extractedData.betrag_brutto.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                       </p>
@@ -219,7 +282,7 @@ export default function UploadPage() {
                   )}
                   {extractedData.betrag_netto && (
                     <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">{t('receipts.amount')}</p>
+                      <p className="text-xs text-text-footer mb-1">{t('receipts.amountNet')}</p>
                       <p className="font-medium text-text-primary">
                         {extractedData.betrag_netto.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                       </p>
@@ -227,7 +290,7 @@ export default function UploadPage() {
                   )}
                   {extractedData.mwst_betrag && (
                     <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">{t('receipts.amount')}</p>
+                      <p className="text-xs text-text-footer mb-1">{t('receipts.amountTax')}</p>
                       <p className="font-medium text-text-primary">
                         {extractedData.mwst_betrag.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                       </p>
@@ -235,7 +298,7 @@ export default function UploadPage() {
                   )}
                   {extractedData.mwst_satz && (
                     <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">{t('receipts.amount')}</p>
+                      <p className="text-xs text-text-footer mb-1">{t('receipts.amountTax')}</p>
                       <p className="font-medium text-text-primary">{extractedData.mwst_satz}%</p>
                     </div>
                   )}

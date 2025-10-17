@@ -60,7 +60,7 @@ export function Sidebar({ className }: SidebarProps) {
       >
         {/* Logo */}
         <div className="h-20 flex items-center justify-center border-b border-gray-200">
-          <Link href="/" className="text-2xl font-bold text-brand hover:text-brand/80 transition-colors">
+          <Link href="/" className="text-3xl font-bold text-brand hover:text-brand/80 transition-colors">
             {t('common.appName')}
           </Link>
         </div>

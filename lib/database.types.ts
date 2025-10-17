@@ -11,6 +11,7 @@ export interface Database {
           file_name: string;
           file_type: 'image' | 'pdf';
           file_size: number | null;
+          file_hash: string | null;
           amount: number | null;
           amount_net: number | null;
           amount_tax: number | null;
@@ -32,6 +33,7 @@ export interface Database {
           file_name: string;
           file_type: 'image' | 'pdf';
           file_size?: number | null;
+          file_hash?: string | null;
           amount?: number | null;
           amount_net?: number | null;
           amount_tax?: number | null;
@@ -53,6 +55,7 @@ export interface Database {
           file_name?: string;
           file_type?: 'image' | 'pdf';
           file_size?: number | null;
+          file_hash?: string | null;
           amount?: number | null;
           amount_net?: number | null;
           amount_tax?: number | null;

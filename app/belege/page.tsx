@@ -42,6 +42,16 @@ export default function BelegePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return null;
+  }
+
+  // Don't render if not authenticated
+  if (!user) {
+    return null;
+  }
+
   const fetchReceipts = async () => {
     if (!user) return;
 
