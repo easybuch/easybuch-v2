@@ -1,24 +1,41 @@
 # EasyBuch - Digitale Belegverwaltung
 
-Ein moderner Online-Service für Selbständige und kleine Unternehmen in Deutschland. Fotografieren Sie Ihren Beleg – EasyBuch erkennt, sortiert und speichert ihn automatisch.
+Ein moderner Online-Service für Selbständige und kleine Unternehmen. Fotografieren Sie Ihren Beleg – EasyBuch erkennt, sortiert und speichert ihn automatisch.
 
-## 🚀 Features
+## Hauptfunktionen
+
+- **Automatische Belegerkennung** - OCR-basierte Extraktion von Beträgen, Händler, Datum und Kategorie
+- **Belegverwaltung** - Übersichtliche Verwaltung aller hochgeladenen Belege
+- **Filter & Suche** - Nach Kategorie, Datum und Händler filtern
+- **Sichere Authentifizierung** - Mit Supabase Auth inkl. Passwort-Reset
+- **Mehrsprachig** - Deutsch und Russisch vollständig unterstützt
+- **Duplikat-Erkennung** - Automatische Erkennung bereits hochgeladener Belege
+- **Dashboard** - Übersicht über Belege und Ausgaben
+
+## Tech Stack
 
 - **Next.js 14** mit App Router
 - **TypeScript** für Type-Safety
+- **Supabase** für Backend & Authentifizierung
 - **Tailwind CSS** mit Custom Design Tokens
 - **Responsive Design** (Mobile-First)
 - **Atomic Design** Komponenten-Architektur
-- **React Hook Form** + **Zod** für Formular-Validierung
-- **TanStack Query** für Data Fetching
 - **Lucide Icons** für moderne Icons
 - **ESLint** + **Prettier** für Code-Qualität
 
-## 📦 Installation
+## Installation
 
 ```bash
+# Repository klonen
+git clone https://github.com/Scolo2904/easybuch.git
+cd easybuch
+
 # Dependencies installieren
 npm install
+
+# Umgebungsvariablen einrichten
+cp .env.example .env.local
+# Fügen Sie Ihre Supabase-Credentials in .env.local ein
 
 # Development Server starten
 npm run dev
@@ -30,7 +47,17 @@ npm start
 
 Die Anwendung läuft auf [http://localhost:3000](http://localhost:3000)
 
-## 🎨 Design System
+## Umgebungsvariablen
+
+Erstellen Sie eine `.env.local` Datei mit folgenden Variablen:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+## Design System
 
 ### Farbpalette
 
@@ -69,36 +96,56 @@ Die Anwendung läuft auf [http://localhost:3000](http://localhost:3000)
 - **Mobile**: 767px - 479px
 - **Small Mobile**: < 479px
 
-## 📁 Projektstruktur
+## Projektstruktur
 
 ```
 easybuch/
 ├── app/
-│   ├── layout.tsx          # Root Layout mit Font Setup
-│   ├── page.tsx            # Dashboard Homepage
-│   ├── belege/
-│   │   └── page.tsx        # Meine Belege Seite
-│   └── globals.css         # Global Styles
+│   ├── layout.tsx              # Root Layout mit Font Setup
+│   ├── page.tsx                # Dashboard Homepage
+│   ├── login/                  # Login-Seite
+│   ├── register/               # Registrierungs-Seite
+│   ├── forgot-password/        # Passwort vergessen
+│   ├── reset-password/         # Passwort zurücksetzen
+│   ├── belege/                 # Belege-Übersicht
+│   ├── upload/                 # Beleg-Upload
+│   ├── api/
+│   │   ├── receipts/extract/   # OCR API Route
+│   │   └── analyze-receipt/    # Beleg-Analyse
+│   └── auth/callback/          # Auth Callback
 ├── components/
-│   ├── atoms/              # Basis-Komponenten
+│   ├── atoms/                  # Basis-Komponenten
 │   │   ├── Button.tsx
 │   │   ├── Card.tsx
 │   │   ├── Input.tsx
-│   │   └── Badge.tsx
-│   ├── molecules/          # Zusammengesetzte Komponenten
-│   ├── organisms/          # Komplexe Komponenten
+│   │   ├── Badge.tsx
+│   │   └── LanguageSwitcher.tsx
+│   ├── molecules/              # Zusammengesetzte Komponenten
+│   │   ├── FileUploadZone.tsx
+│   │   └── ReceiptDetailModal.tsx
+│   ├── organisms/              # Komplexe Komponenten
 │   │   ├── Sidebar.tsx
 │   │   └── Header.tsx
-│   └── templates/          # Layout Templates
+│   └── templates/              # Layout Templates
 │       └── DashboardLayout.tsx
+├── lib/
+│   ├── supabase.ts            # Supabase Client
+│   ├── auth-context.tsx       # Auth Context Provider
+│   ├── language-context.tsx   # Mehrsprachigkeit
+│   ├── receipt-ocr.ts         # OCR Logik
+│   └── database.types.ts      # TypeScript Types
+├── messages/
+│   ├── de.json                # Deutsche Übersetzungen
+│   └── ru.json                # Russische Übersetzungen
 ├── utils/
-│   └── cn.ts              # Tailwind Merge Utility
-├── tailwind.config.ts     # Tailwind Konfiguration
-├── tsconfig.json          # TypeScript Konfiguration
+│   ├── cn.ts                  # Tailwind Merge Utility
+│   └── file-hash.ts           # Duplikat-Erkennung
+├── middleware.ts              # Next.js Middleware
+├── tailwind.config.ts         # Tailwind Konfiguration
 └── package.json
 ```
 
-## 🧩 Komponenten
+## Komponenten
 
 ### Atoms (Basis-Komponenten)
 
@@ -106,17 +153,41 @@ easybuch/
 - **Card**: Standard Cards mit optionalem Icon-Container
 - **Input**: Form Fields mit Validierung
 - **Badge**: Status-Badges mit verschiedenen Varianten
+- **LanguageSwitcher**: Sprachwechsel zwischen DE/RU
+
+### Molecules (Zusammengesetzte Komponenten)
+
+- **FileUploadZone**: Drag & Drop Upload mit Vorschau
+- **ReceiptDetailModal**: Detailansicht mit Bearbeitung
 
 ### Organisms (Komplexe Komponenten)
 
 - **Sidebar**: Navigation mit Logo, Menu-Items und User-Section
-- **Header**: Breadcrumbs und User-Dropdown
+- **Header**: Breadcrumbs, Sprachwechsel und User-Dropdown
 
 ### Templates
 
 - **DashboardLayout**: Haupt-Layout mit Sidebar, Header und Content Area
 
-## 🎯 Best Practices
+## Internationalisierung
+
+Die Anwendung unterstützt mehrere Sprachen:
+
+- Deutsch (Standard)
+- Russisch
+
+Übersetzungen werden über den `LanguageContext` verwaltet und in `messages/` gespeichert.
+
+```tsx
+import { useLanguage } from '@/lib/language-context';
+
+function MyComponent() {
+  const { t, locale, setLocale } = useLanguage();
+  return <h1>{t('common.appName')}</h1>;
+}
+```
+
+## Best Practices
 
 - Alle Komponenten sind **fully responsive**
 - **TypeScript** wird strikt verwendet (kein `any`)
@@ -126,15 +197,47 @@ easybuch/
 - **ARIA-Attribute** für Accessibility
 - **Keyboard-Navigation** wird unterstützt
 
-## 📝 Nächste Schritte
+## Authentifizierung
 
-1. Beleg-Upload Funktionalität implementieren
-2. OCR-Integration für automatische Belegerkennung
-3. Beleg-Liste mit Filterung und Sortierung
-4. API-Integration mit TanStack Query
-5. Authentifizierung implementieren
-6. Tests mit Jest und React Testing Library
+Die Anwendung nutzt Supabase Auth mit folgenden Features:
 
-## 📄 Lizenz
+- E-Mail/Passwort Registrierung
+- E-Mail-Bestätigung
+- Login/Logout
+- Passwort vergessen/zurücksetzen
+- Geschützte Routen mit Middleware
+- Session Management
+
+## Datenbank
+
+Supabase PostgreSQL mit folgenden Haupttabellen:
+
+- **receipts**: Beleg-Daten mit OCR-Ergebnissen
+- **users**: Benutzer-Authentifizierung (Supabase Auth)
+
+## Deployment
+
+Das Projekt ist für Vercel optimiert:
+
+```bash
+# Build testen
+npm run build
+
+# Auf Vercel deployen
+vercel --prod
+```
+
+Stellen Sie sicher, dass alle Umgebungsvariablen in Vercel konfiguriert sind.
+
+## Roadmap
+
+- [ ] Export-Funktionen (PDF, CSV)
+- [ ] Erweiterte Statistiken und Reports
+- [ ] Mobile App (React Native)
+- [ ] Weitere Sprachen (EN, FR, ES)
+- [ ] Automatische Kategorisierung mit KI
+- [ ] Steuerberater-Integration
+
+## Lizenz
 
 Privates Projekt
