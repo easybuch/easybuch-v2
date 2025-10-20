@@ -185,10 +185,10 @@ Beispiel:
 Gib NUR das JSON zurück, ohne zusätzlichen Text oder Markdown-Formatierung.`;
 
     // Call Claude API with fallback support
+    // Note: Different API keys have access to different model versions
     const modelsToTry = [
-      'claude-3-5-sonnet-20241022', // Latest, best quality
-      'claude-3-5-sonnet-20240620',  // Previous 3.5 version
-      'claude-3-sonnet-20240229',    // Base Claude 3, most compatible
+      'claude-3-5-sonnet-20241022', // Latest 3.5 (if available)
+      'claude-3-haiku-20240307',     // Haiku (cheap and fast, good for OCR)
     ];
 
     let message: Anthropic.Message | undefined;
