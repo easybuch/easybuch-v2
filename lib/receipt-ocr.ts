@@ -191,8 +191,8 @@ Gib NUR das JSON zurück, ohne zusätzlichen Text oder Markdown-Formatierung.`;
       'claude-3-sonnet-20240229',    // Base Claude 3, most compatible
     ];
 
-    let message;
-    let lastError;
+    let message: Anthropic.Message | undefined;
+    let lastError: unknown;
     
     for (const model of modelsToTry) {
       try {
@@ -234,17 +234,18 @@ Gib NUR das JSON zurück, ohne zusätzlichen Text oder Markdown-Formatierung.`;
         console.log(`[Receipt OCR] ✓ Successfully used model: ${model}`);
         break; // Success! Exit the loop
         
-      } catch (error: any) {
+      } catch (error) {
         lastError = error;
         
         // If it's a 404 (model not found), try the next model
-        if (error.status === 404) {
+        if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
           console.log(`[Receipt OCR] ✗ Model ${model} not available (404), trying next...`);
           continue;
         }
         
         // For other errors (auth, rate limit, etc.), throw immediately
-        console.error(`[Receipt OCR] ✗ Error with model ${model}:`, error.message);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`[Receipt OCR] ✗ Error with model ${model}:`, errorMessage);
         throw error;
       }
     }
