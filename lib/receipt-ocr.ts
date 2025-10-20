@@ -184,39 +184,76 @@ Beispiel:
 
 Gib NUR das JSON zurück, ohne zusätzlichen Text oder Markdown-Formatierung.`;
 
-    // Call Claude API
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            contentType === 'document' 
-              ? {
-                  type: 'document' as const,
-                  source: {
-                    type: 'base64',
-                    media_type: 'application/pdf',
-                    data: base64Data,
-                  },
-                }
-              : {
-                  type: 'image' as const,
-                  source: {
-                    type: 'base64',
-                    media_type: mediaType,
-                    data: base64Data,
-                  },
-                },
+    // Call Claude API with fallback support
+    const modelsToTry = [
+      'claude-3-5-sonnet-20241022', // Latest, best quality
+      'claude-3-5-sonnet-20240620',  // Previous 3.5 version
+      'claude-3-sonnet-20240229',    // Base Claude 3, most compatible
+    ];
+
+    let message;
+    let lastError;
+    
+    for (const model of modelsToTry) {
+      try {
+        console.log(`[Receipt OCR] Trying model: ${model}`);
+        
+        message = await anthropic.messages.create({
+          model: model,
+          max_tokens: 1024,
+          messages: [
             {
-              type: 'text',
-              text: prompt,
+              role: 'user',
+              content: [
+                contentType === 'document' 
+                  ? {
+                      type: 'document' as const,
+                      source: {
+                        type: 'base64',
+                        media_type: 'application/pdf',
+                        data: base64Data,
+                      },
+                    }
+                  : {
+                      type: 'image' as const,
+                      source: {
+                        type: 'base64',
+                        media_type: mediaType,
+                        data: base64Data,
+                      },
+                    },
+                {
+                  type: 'text',
+                  text: prompt,
+                },
+              ],
             },
           ],
-        },
-      ],
-    });
+        });
+        
+        console.log(`[Receipt OCR] ✓ Successfully used model: ${model}`);
+        break; // Success! Exit the loop
+        
+      } catch (error: any) {
+        lastError = error;
+        
+        // If it's a 404 (model not found), try the next model
+        if (error.status === 404) {
+          console.log(`[Receipt OCR] ✗ Model ${model} not available (404), trying next...`);
+          continue;
+        }
+        
+        // For other errors (auth, rate limit, etc.), throw immediately
+        console.error(`[Receipt OCR] ✗ Error with model ${model}:`, error.message);
+        throw error;
+      }
+    }
+
+    // If we exhausted all models, throw the last error
+    if (!message) {
+      console.error('[Receipt OCR] ✗ All models failed!');
+      throw lastError || new Error('All Claude models unavailable');
+    }
 
     // Extract the response text
     const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
