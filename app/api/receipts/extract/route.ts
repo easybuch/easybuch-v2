@@ -5,6 +5,35 @@ export const runtime = 'nodejs';
 export const maxDuration = 30; // 30 seconds timeout for OCR processing
 
 /**
+ * Validates file signature (magic numbers) to ensure file content matches declared type
+ * This prevents malicious files disguised with wrong extensions
+ */
+function validateFileSignature(buffer: Buffer, mimeType: string): boolean {
+  if (buffer.length < 4) return false;
+
+  const header = buffer.slice(0, 8);
+  
+  // JPEG: FF D8 FF
+  if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
+    return header[0] === 0xFF && header[1] === 0xD8 && header[2] === 0xFF;
+  }
+  
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (mimeType === 'image/png') {
+    return header[0] === 0x89 && header[1] === 0x50 && 
+           header[2] === 0x4E && header[3] === 0x47;
+  }
+  
+  // PDF: 25 50 44 46 (%PDF)
+  if (mimeType === 'application/pdf') {
+    return header[0] === 0x25 && header[1] === 0x50 && 
+           header[2] === 0x44 && header[3] === 0x46;
+  }
+  
+  return false;
+}
+
+/**
  * POST /api/receipts/extract
  * Extracts data from a receipt image or PDF using Claude 3.5 Sonnet
  */
@@ -21,7 +50,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
+    // Validate file type (browser-provided MIME type)
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
@@ -42,6 +71,16 @@ export async function POST(request: NextRequest) {
     // Convert file to buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // Validate actual file content (Magic Number validation)
+    // This prevents malicious files disguised with wrong extensions
+    const isValidFile = validateFileSignature(buffer, file.type);
+    if (!isValidFile) {
+      return NextResponse.json(
+        { error: 'File content does not match the declared type. Possible security risk.' },
+        { status: 400 }
+      );
+    }
 
     // Extract receipt data using Claude
     const extractedData = await extractReceiptData(buffer, file.type);

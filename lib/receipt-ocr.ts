@@ -1,6 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk';
 import sharp from 'sharp';
 
+// Validate API key at module load time
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('[Receipt OCR] CRITICAL: ANTHROPIC_API_KEY environment variable is not set!');
+  console.error('[Receipt OCR] OCR functionality will not work until this is configured.');
+}
+
 // Initialize Anthropic client
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -121,9 +127,16 @@ export async function extractReceiptData(
   mimeType: string
 ): Promise<ReceiptData> {
   try {
-    // Validate API key
+    // Validate API key at runtime
     if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('[Receipt OCR] Runtime check: ANTHROPIC_API_KEY is missing');
       throw new Error('ANTHROPIC_API_KEY is not configured');
+    }
+
+    // Validate API key format (basic check)
+    if (!process.env.ANTHROPIC_API_KEY.startsWith('sk-ant-')) {
+      console.error('[Receipt OCR] Invalid API key format detected');
+      throw new Error('ANTHROPIC_API_KEY has invalid format');
     }
 
     // Compress image if needed to meet Anthropic's 5MB limit
