@@ -168,6 +168,10 @@ export default function UploadPage() {
         amount_tax: extractedData?.mwst_betrag ?? null,
         amount_gross: extractedData?.betrag_brutto ?? null,
         tax_rate: extractedData?.mwst_satz ?? null,
+        vat_7_net: extractedData?.vat_7_net ?? null,
+        vat_7_tax: extractedData?.vat_7_tax ?? null,
+        vat_19_net: extractedData?.vat_19_net ?? null,
+        vat_19_tax: extractedData?.vat_19_tax ?? null,
         receipt_date: extractedData?.datum ?? null,
         category: extractedData?.kategorie ?? null,
         vendor: extractedData?.lieferant ?? null,
@@ -272,36 +276,100 @@ export default function UploadPage() {
                       <p className="font-medium text-text-primary">{extractedData.lieferant}</p>
                     </div>
                   )}
-                  {extractedData.betrag_brutto && (
-                    <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">{t('receipts.amountGross')}</p>
-                      <p className="font-semibold text-xl text-brand">
-                        {extractedData.betrag_brutto.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                      </p>
+                  
+                  {/* MwSt-Aufschlüsselung */}
+                  <div className="pb-3 border-b border-gray-200">
+                    <p className="text-xs text-text-footer mb-2">{t('receipts.amountBreakdown')}</p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-button p-3 space-y-2">
+                      {/* Check if mixed VAT rates exist */}
+                      {(extractedData.vat_7_net || extractedData.vat_19_net) ? (
+                        <>
+                          {/* 7% VAT Section */}
+                          {extractedData.vat_7_net && (
+                            <div className="space-y-1 pb-2">
+                              <div className="flex justify-between items-center text-xs text-text-footer font-semibold">
+                                <span>{t('receipts.vat7Rate')}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-text-secondary pl-2">{t('receipts.amountNet')}:</span>
+                                <span className="font-medium text-text-primary">
+                                  {extractedData.vat_7_net.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-text-secondary pl-2">{t('receipts.amountTax')} (7%):</span>
+                                <span className="font-medium text-text-primary">
+                                  {extractedData.vat_7_tax?.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* 19% VAT Section */}
+                          {extractedData.vat_19_net && (
+                            <div className="space-y-1 pb-2 border-t border-blue-300 pt-2">
+                              <div className="flex justify-between items-center text-xs text-text-footer font-semibold">
+                                <span>{t('receipts.vat19Rate')}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-text-secondary pl-2">{t('receipts.amountNet')}:</span>
+                                <span className="font-medium text-text-primary">
+                                  {extractedData.vat_19_net.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-text-secondary pl-2">{t('receipts.amountTax')} (19%):</span>
+                                <span className="font-medium text-text-primary">
+                                  {extractedData.vat_19_tax?.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Total Section */}
+                          {extractedData.betrag_brutto && (
+                            <div className="flex justify-between items-center text-base pt-2 border-t-2 border-blue-400">
+                              <span className="font-semibold text-text-primary">{t('receipts.amountGross')}:</span>
+                              <span className="font-bold text-lg text-brand">
+                                {extractedData.betrag_brutto.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {/* Simple receipt with single VAT rate */}
+                          {extractedData.betrag_netto && (
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-text-secondary">{t('receipts.amountNet')}:</span>
+                              <span className="font-medium text-text-primary">
+                                {extractedData.betrag_netto.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                              </span>
+                            </div>
+                          )}
+                          {extractedData.mwst_betrag && (
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-text-secondary">
+                                {t('receipts.amountTax')} {extractedData.mwst_satz ? `(${extractedData.mwst_satz}%)` : ''}:
+                              </span>
+                              <span className="font-medium text-text-primary">
+                                {extractedData.mwst_betrag.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                              </span>
+                            </div>
+                          )}
+                          {extractedData.betrag_brutto && (
+                            <div className="flex justify-between items-center text-base pt-2 border-t border-blue-300">
+                              <span className="font-semibold text-text-primary">{t('receipts.amountGross')}:</span>
+                              <span className="font-bold text-lg text-brand">
+                                {extractedData.betrag_brutto.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
-                  )}
-                  {extractedData.betrag_netto && (
-                    <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">{t('receipts.amountNet')}</p>
-                      <p className="font-medium text-text-primary">
-                        {extractedData.betrag_netto.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                      </p>
-                    </div>
-                  )}
-                  {extractedData.mwst_betrag && (
-                    <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">{t('receipts.amountTax')}</p>
-                      <p className="font-medium text-text-primary">
-                        {extractedData.mwst_betrag.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                      </p>
-                    </div>
-                  )}
-                  {extractedData.mwst_satz && (
-                    <div className="pb-3 border-b border-gray-200">
-                      <p className="text-xs text-text-footer mb-1">{t('receipts.amountTax')}</p>
-                      <p className="font-medium text-text-primary">{extractedData.mwst_satz}%</p>
-                    </div>
-                  )}
+                  </div>
+                  
                   {extractedData.datum && (
                     <div className="pb-3 border-b border-gray-200">
                       <p className="text-xs text-text-footer mb-1">{t('receipts.date')}</p>

@@ -20,6 +20,10 @@ export interface ReceiptData {
   mwst_betrag: number | null;
   betrag_brutto: number | null;
   mwst_satz: number | null;
+  vat_7_net: number | null;
+  vat_7_tax: number | null;
+  vat_19_net: number | null;
+  vat_19_tax: number | null;
   datum: string | null; // Format: YYYY-MM-DD
   lieferant: string | null;
   kategorie: string | null;
@@ -170,8 +174,24 @@ WICHTIG:
 - Alle Beträge in Euro (€) als Zahlen ohne Währungssymbol
 - Datum im Format YYYY-MM-DD
 - Falls ein Wert nicht gefunden wird, setze ihn auf null
-- Bei mehreren MwSt.-Sätzen, nimm den höchsten
 - Kategorie muss eine der folgenden sein: ${RECEIPT_CATEGORIES.join(', ')}
+
+KRITISCH - MwSt.-Aufschlüsselung:
+Suche auf dem Beleg nach einer MwSt.-Tabelle am Ende (oft mit "MWST%", "MWST", "Netto", "Brutto" beschriftet).
+Wenn du MEHRERE MwSt.-Sätze findest (z.B. "A 7%" und "B 19%" oder ähnlich):
+- Extrahiere für JEDEN Steuersatz separat die Netto- und MwSt.-Beträge
+- vat_7_net = Netto-Betrag für 7% Artikel
+- vat_7_tax = MwSt.-Betrag für 7% Artikel
+- vat_19_net = Netto-Betrag für 19% Artikel
+- vat_19_tax = MwSt.-Betrag für 19% Artikel
+- betrag_netto = Summe aller Netto-Beträge
+- mwst_betrag = Summe aller MwSt.-Beträge
+- betrag_brutto = Gesamtbetrag (zu zahlen / Karte / Summe)
+- mwst_satz = höchster vorkommender Satz (meist 19)
+
+Wenn nur EIN MwSt.-Satz vorhanden ist:
+- Fülle vat_7_net/vat_7_tax ODER vat_19_net/vat_19_tax (je nach Satz)
+- Die anderen bleiben null
 
 JSON-Schema:
 {
@@ -179,20 +199,50 @@ JSON-Schema:
   "mwst_betrag": number | null,
   "betrag_brutto": number | null,
   "mwst_satz": number | null,
+  "vat_7_net": number | null,
+  "vat_7_tax": number | null,
+  "vat_19_net": number | null,
+  "vat_19_tax": number | null,
   "datum": "YYYY-MM-DD" | null,
   "lieferant": string | null,
   "kategorie": string | null
 }
 
-Beispiel:
+Beispiel für gemischten Beleg (LIDL-Beleg mit MwSt-Tabelle am Ende):
+Wenn auf dem Beleg steht:
+  MWST%    MWST +   Netto  = Brutto
+  A  7 %    4,13    59,03    63,16
+  B 19 %    0,04     0,21     0,25
+  Summe     4,17    59,24    63,41
+
+Dann extrahiere:
+{
+  "betrag_netto": 59.24,
+  "mwst_betrag": 4.17,
+  "betrag_brutto": 63.41,
+  "mwst_satz": 19,
+  "vat_7_net": 59.03,
+  "vat_7_tax": 4.13,
+  "vat_19_net": 0.21,
+  "vat_19_tax": 0.04,
+  "datum": "2024-10-18",
+  "lieferant": "LIDL",
+  "kategorie": "Verpflegung & Bewirtung"
+}
+
+Beispiel für einfachen Beleg (nur ein MwSt.-Satz):
 {
   "betrag_netto": 84.03,
   "mwst_betrag": 15.97,
   "betrag_brutto": 100.00,
   "mwst_satz": 19,
+  "vat_7_net": null,
+  "vat_7_tax": null,
+  "vat_19_net": 84.03,
+  "vat_19_tax": 15.97,
   "datum": "2024-03-15",
   "lieferant": "REWE",
-  "kategorie": "Verpflegung"
+  "kategorie": "Verpflegung & Bewirtung"
 }
 
 Gib NUR das JSON zurück, ohne zusätzlichen Text oder Markdown-Formatierung.`;
@@ -293,6 +343,10 @@ Gib NUR das JSON zurück, ohne zusätzlichen Text oder Markdown-Formatierung.`;
       mwst_betrag: extractedData.mwst_betrag ?? null,
       betrag_brutto: extractedData.betrag_brutto ?? null,
       mwst_satz: extractedData.mwst_satz ?? null,
+      vat_7_net: extractedData.vat_7_net ?? null,
+      vat_7_tax: extractedData.vat_7_tax ?? null,
+      vat_19_net: extractedData.vat_19_net ?? null,
+      vat_19_tax: extractedData.vat_19_tax ?? null,
       datum: extractedData.datum ?? null,
       lieferant: extractedData.lieferant ?? null,
       kategorie: extractedData.kategorie ?? null,

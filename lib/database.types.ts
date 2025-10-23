@@ -17,6 +17,10 @@ export interface Database {
           amount_tax: number | null;
           amount_gross: number | null;
           tax_rate: number | null;
+          vat_7_net: number | null;
+          vat_7_tax: number | null;
+          vat_19_net: number | null;
+          vat_19_tax: number | null;
           receipt_date: string | null;
           category: string | null;
           vendor: string | null;
@@ -39,6 +43,10 @@ export interface Database {
           amount_tax?: number | null;
           amount_gross?: number | null;
           tax_rate?: number | null;
+          vat_7_net?: number | null;
+          vat_7_tax?: number | null;
+          vat_19_net?: number | null;
+          vat_19_tax?: number | null;
           receipt_date?: string | null;
           category?: string | null;
           vendor?: string | null;
@@ -61,6 +69,10 @@ export interface Database {
           amount_tax?: number | null;
           amount_gross?: number | null;
           tax_rate?: number | null;
+          vat_7_net?: number | null;
+          vat_7_tax?: number | null;
+          vat_19_net?: number | null;
+          vat_19_tax?: number | null;
           receipt_date?: string | null;
           category?: string | null;
           vendor?: string | null;

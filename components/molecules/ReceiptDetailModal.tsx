@@ -199,20 +199,68 @@ export const ReceiptDetailModal = ({
                   {t('receipts.amountBreakdown')}
                 </label>
                 <div className="bg-blue-50 border border-blue-200 rounded-button p-4 space-y-2">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-text-secondary">{t('receipts.amountNet')}:</span>
-                    <span className="font-medium text-text-primary">{formatAmount(receipt.amount_net)}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-text-secondary">
-                      {t('receipts.amountTax')} {formatTaxRate(receipt.tax_rate)}:
-                    </span>
-                    <span className="font-medium text-text-primary">{formatAmount(receipt.amount_tax)}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-base pt-2 border-t border-blue-300">
-                    <span className="font-semibold text-text-primary">{t('receipts.amountGross')}:</span>
-                    <span className="font-bold text-lg text-brand">{formatAmount(receipt.amount_gross)}</span>
-                  </div>
+                  {/* Check if mixed VAT rates exist */}
+                  {(receipt.vat_7_net || receipt.vat_19_net) ? (
+                    <>
+                      {/* 7% VAT Section */}
+                      {receipt.vat_7_net && (
+                        <div className="space-y-1 pb-2">
+                          <div className="flex justify-between items-center text-xs text-text-footer font-semibold">
+                            <span>{t('receipts.vat7Rate')}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-text-secondary pl-2">{t('receipts.amountNet')}:</span>
+                            <span className="font-medium text-text-primary">{formatAmount(receipt.vat_7_net)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-text-secondary pl-2">{t('receipts.amountTax')} (7%):</span>
+                            <span className="font-medium text-text-primary">{formatAmount(receipt.vat_7_tax)}</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* 19% VAT Section */}
+                      {receipt.vat_19_net && (
+                        <div className="space-y-1 pb-2 border-t border-blue-300 pt-2">
+                          <div className="flex justify-between items-center text-xs text-text-footer font-semibold">
+                            <span>{t('receipts.vat19Rate')}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-text-secondary pl-2">{t('receipts.amountNet')}:</span>
+                            <span className="font-medium text-text-primary">{formatAmount(receipt.vat_19_net)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-text-secondary pl-2">{t('receipts.amountTax')} (19%):</span>
+                            <span className="font-medium text-text-primary">{formatAmount(receipt.vat_19_tax)}</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Total Section */}
+                      <div className="flex justify-between items-center text-base pt-2 border-t-2 border-blue-400">
+                        <span className="font-semibold text-text-primary">{t('receipts.amountGross')}:</span>
+                        <span className="font-bold text-lg text-brand">{formatAmount(receipt.amount_gross)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Simple receipt with single VAT rate */}
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-text-secondary">{t('receipts.amountNet')}:</span>
+                        <span className="font-medium text-text-primary">{formatAmount(receipt.amount_net)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-text-secondary">
+                          {t('receipts.amountTax')} {formatTaxRate(receipt.tax_rate)}:
+                        </span>
+                        <span className="font-medium text-text-primary">{formatAmount(receipt.amount_tax)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-base pt-2 border-t border-blue-300">
+                        <span className="font-semibold text-text-primary">{t('receipts.amountGross')}:</span>
+                        <span className="font-bold text-lg text-brand">{formatAmount(receipt.amount_gross)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <p className="text-xs text-text-footer mt-2">
                   {t('receipts.amountReadOnly')}

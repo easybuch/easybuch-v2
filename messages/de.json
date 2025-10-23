@@ -88,6 +88,8 @@
     "amountTax": "MwSt.",
     "amountBreakdown": "Betragsaufschlüsselung",
     "amountReadOnly": "Beträge werden automatisch aus dem Beleg ausgelesen und können nicht manuell geändert werden.",
+    "vat7Rate": "MwSt. 7%",
+    "vat19Rate": "MwSt. 19%",
     "category": "Kategorie",
     "status": "Status",
     "actions": "Aktionen",
