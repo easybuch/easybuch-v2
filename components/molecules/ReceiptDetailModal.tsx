@@ -16,6 +16,7 @@ interface ReceiptDetailModalProps {
   onSave: (id: string, updates: Partial<Receipt>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   signedUrl: string | null;
+  signedUrls?: string[] | null; // For multi-image receipts
 }
 
 
@@ -26,6 +27,7 @@ export const ReceiptDetailModal = ({
   onSave,
   onDelete,
   signedUrl,
+  signedUrls,
 }: ReceiptDetailModalProps) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
@@ -110,14 +112,27 @@ export const ReceiptDetailModal = ({
     }
   };
 
-  const handleDownload = () => {
-    if (signedUrl) {
-      const link = document.createElement('a');
-      link.href = signedUrl;
-      link.download = receipt.file_name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  const handleDownload = async () => {
+    // Multi-image: Download all images sequentially
+    if (signedUrls && signedUrls.length > 1) {
+      for (let i = 0; i < signedUrls.length; i++) {
+        const url = signedUrls[i];
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${receipt.file_name.split('.')[0]}_Teil${i + 1}.jpg`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Wait 300ms between downloads to avoid browser blocking
+        if (i < signedUrls.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+    } else if (signedUrl) {
+      // Single image: Open in new tab
+      window.open(signedUrl, '_blank');
     }
   };
 
@@ -155,25 +170,50 @@ export const ReceiptDetailModal = ({
             {/* Left: Preview */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-text-primary">{t('receipts.viewDetails')}</h3>
-              <div className="bg-gray-50 rounded-card p-4 min-h-[400px] flex items-center justify-center">
-                {signedUrl ? (
-                  receipt.file_type === 'pdf' ? (
-                    <iframe
-                      src={signedUrl}
-                      className="w-full h-[600px] rounded-card"
-                      title="PDF Preview"
-                    />
+              
+              {/* Multi-image display */}
+              {signedUrls && signedUrls.length > 1 ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 max-h-[600px] overflow-y-auto p-2">
+                    {signedUrls.map((url, index) => (
+                      <div key={index} className="border-2 border-brand rounded-button overflow-hidden bg-white">
+                        <div className="aspect-[3/4] bg-gray-50 flex items-center justify-center p-2">
+                          <img
+                            src={url}
+                            alt={`Teil ${index + 1}`}
+                            className="max-w-full max-h-full object-contain rounded"
+                          />
+                        </div>
+                        <div className="p-2 bg-gray-50 border-t border-gray-200">
+                          <p className="text-xs text-text-footer text-center font-medium">Teil {index + 1}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Single image display */
+                <div className="bg-gray-50 rounded-card p-4 min-h-[400px] flex items-center justify-center">
+                  {signedUrl ? (
+                    receipt.file_type === 'pdf' ? (
+                      <iframe
+                        src={signedUrl}
+                        className="w-full h-[600px] rounded-card"
+                        title="PDF Preview"
+                      />
+                    ) : (
+                      <img
+                        src={signedUrl}
+                        alt={receipt.file_name}
+                        className="max-w-full max-h-[600px] object-contain rounded-card"
+                      />
+                    )
                   ) : (
-                    <img
-                      src={signedUrl}
-                      alt={receipt.file_name}
-                      className="max-w-full max-h-[600px] object-contain rounded-card"
-                    />
-                  )
-                ) : (
-                  <Loader2 size={48} className="text-brand animate-spin" />
-                )}
-              </div>
+                    <Loader2 size={48} className="text-brand animate-spin" />
+                  )}
+                </div>
+              )}
+              
               <div className="text-sm text-text-footer">
                 <p>{receipt.file_name}</p>
                 <p>{receipt.file_type.toUpperCase()}</p>
@@ -370,7 +410,7 @@ export const ReceiptDetailModal = ({
               className="w-full sm:w-auto"
             >
               <Download size={20} className="mr-2" />
-              {t('common.save')}
+              {t('common.download')}
             </Button>
             <Button
               variant="primary"

@@ -19,7 +19,7 @@ export default function UploadPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
-  const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -50,56 +50,33 @@ export default function UploadPage() {
     return null;
   }
 
-  const handleFileSelect = async (file: UploadedFile | null) => {
-    setUploadedFile(file);
+  const handleFileSelect = async (files: UploadedFile[]) => {
+    setUploadedFiles(files);
     setError(null);
     setShowSuccess(false);
     setExtractedData(null);
     setExtractionError(null);
     setIsDuplicate(false);
 
-    // Check for duplicates and extract data when file is selected
-    if (file) {
-      await checkForDuplicate(file);
-      await extractReceiptData(file);
+    // Extract data when files are selected
+    if (files.length > 0) {
+      await extractReceiptData(files);
     }
   };
 
-  const checkForDuplicate = async (file: UploadedFile) => {
-    if (!user) return;
+  // Duplicate check removed for multi-image - will be handled during save
 
-    try {
-      // Generate hash for the uploaded file
-      const fileHash = await generateFileHash(file.file);
-
-      // Check if a receipt with this hash already exists for this user
-      const { data: existingReceipts, error: checkError } = await supabase
-        .from('receipts')
-        .select('id, file_name, created_at')
-        .eq('user_id', user.id)
-        .eq('file_hash', fileHash)
-        .limit(1);
-
-      if (checkError) {
-        console.error('Error checking for duplicates:', checkError);
-        return;
-      }
-
-      if (existingReceipts && existingReceipts.length > 0) {
-        setIsDuplicate(true);
-      }
-    } catch (err) {
-      console.error('Error generating file hash:', err);
-    }
-  };
-
-  const extractReceiptData = async (file: UploadedFile) => {
+  const extractReceiptData = async (files: UploadedFile[]) => {
     setIsExtracting(true);
     setExtractionError(null);
 
     try {
       const formData = new FormData();
-      formData.append('file', file.file);
+      
+      // Add all files to FormData
+      files.forEach((uploadedFile) => {
+        formData.append('files', uploadedFile.file);
+      });
 
       const response = await fetch('/api/receipts/extract', {
         method: 'POST',
@@ -123,45 +100,52 @@ export default function UploadPage() {
   };
 
   const handleSave = async () => {
-    if (!uploadedFile || !user) return;
+    if (uploadedFiles.length === 0 || !user) return;
 
     setIsSubmitting(true);
     setError(null);
 
     try {
+      // 1. Upload ALL files to Supabase Storage
+      const uploadedPaths: Array<{ path: string; order: number }> = [];
+      const timestamp = Date.now();
+      
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        const file = uploadedFiles[i].file;
+        const fileName = `${timestamp}_part${i + 1}_${file.name}`;
+        const filePath = `${user.id}/${fileName}`;
 
-      const file = uploadedFile.file;
-      const fileName = `${Date.now()}_${file.name}`;
-      const filePath = `${user.id}/${fileName}`;
+        const { data: storageData, error: storageError } = await supabase.storage
+          .from('receipts')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+          });
 
-      // 1. Upload file to Supabase Storage
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from('receipts')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+        if (storageError) {
+          // Cleanup: Delete already uploaded files
+          if (uploadedPaths.length > 0) {
+            await supabase.storage.from('receipts').remove(uploadedPaths.map(p => p.path));
+          }
+          throw new Error(`Storage upload failed: ${storageError.message}`);
+        }
 
-      if (storageError) {
-        throw new Error(`Storage upload failed: ${storageError.message}`);
+        uploadedPaths.push({ path: storageData.path, order: i + 1 });
       }
 
-      // 2. Store the storage path (not public URL, since bucket is private)
-      const storagePath = storageData.path;
+      // 2. Use first file for primary metadata
+      const firstFile = uploadedFiles[0].file;
+      const fileType: 'image' | 'pdf' = firstFile.type.includes('pdf') ? 'pdf' : 'image';
+      const fileHash = await generateFileHash(firstFile);
 
-      // 3. Determine file type
-      const fileType: 'image' | 'pdf' = file.type.includes('pdf') ? 'pdf' : 'image';
-
-      // 4. Generate file hash for duplicate detection
-      const fileHash = await generateFileHash(file);
-
-      // 5. Create database entry with extracted data
+      // 3. Create database entry with extracted data
       const receiptData: ReceiptInsert = {
         user_id: user.id,
-        file_url: storagePath, // Store path, not URL
-        file_name: file.name,
+        file_url: uploadedPaths[0].path, // Primary file path
+        file_paths: uploadedPaths, // All file paths
+        file_name: uploadedFiles.length > 1 ? `${firstFile.name} (+${uploadedFiles.length - 1} weitere)` : firstFile.name,
         file_type: fileType,
-        file_size: file.size,
+        file_size: firstFile.size,
         file_hash: fileHash,
         processed: extractedData ? true : false,
         amount_net: extractedData?.betrag_netto ?? null,
@@ -181,8 +165,8 @@ export default function UploadPage() {
       const { error: dbError } = await supabaseUntyped.from('receipts').insert(receiptData);
 
       if (dbError) {
-        // Cleanup: Delete uploaded file if DB insert fails
-        await supabase.storage.from('receipts').remove([filePath]);
+        // Cleanup: Delete all uploaded files if DB insert fails
+        await supabase.storage.from('receipts').remove(uploadedPaths.map(p => p.path));
         throw new Error(`Database insert failed: ${dbError.message}`);
       }
 
@@ -227,12 +211,12 @@ export default function UploadPage() {
           <Card className="min-h-[500px]">
             <FileUploadZone
               onFileSelect={handleFileSelect}
-              uploadedFile={uploadedFile}
+              uploadedFiles={uploadedFiles}
               error={error}
             />
             
-            {/* Duplicate Warning */}
-            {isDuplicate && uploadedFile && (
+            {/* Duplicate Warning - Removed for multi-image */}
+            {false && isDuplicate && uploadedFiles.length > 0 && (
               <div className="mt-4 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-button">
                 <div className="flex items-start gap-3">
                   <AlertCircle size={24} className="text-yellow-600 flex-shrink-0 mt-0.5" />
@@ -269,6 +253,7 @@ export default function UploadPage() {
                   <Sparkles size={20} className="text-brand" />
                   <h3 className="font-semibold text-text-primary">{t('receipts.extractedData')}</h3>
                 </div>
+
                 <div className="space-y-4">
                   {extractedData.lieferant && (
                     <div className="pb-3 border-b border-gray-200">
@@ -401,7 +386,7 @@ export default function UploadPage() {
           )}
 
           {/* Empty State */}
-          {!uploadedFile && !isExtracting && !extractedData && !extractionError && (
+          {uploadedFiles.length === 0 && !isExtracting && !extractedData && !extractionError && (
             <div className="p-8 text-center">
               <Sparkles size={48} className="text-gray-300 mx-auto mb-4" />
               <p className="text-text-secondary mb-2">{t('receipts.extractedData')}</p>
@@ -461,7 +446,7 @@ export default function UploadPage() {
         <Button
           variant="primary"
           onClick={handleSave}
-          disabled={!uploadedFile || isSubmitting}
+          disabled={uploadedFiles.length === 0 || isSubmitting}
           className="sm:w-auto"
         >
           <Save size={20} className="mr-2" />

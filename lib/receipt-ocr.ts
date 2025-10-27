@@ -121,15 +121,19 @@ async function compressImageIfNeeded(
 }
 
 /**
- * Extracts receipt data from an image or PDF using Claude 3.5 Sonnet
- * @param fileBuffer - The file buffer (image or PDF)
- * @param mimeType - The MIME type of the file (e.g., 'image/jpeg', 'application/pdf')
+ * Extracts receipt data from one or more images/PDFs using Claude 3.5 Sonnet
+ * @param files - Array of file buffers with their MIME types, or a single buffer with mimeType (for backward compatibility)
+ * @param mimeType - The MIME type (only used if files is a single Buffer)
  * @returns Extracted receipt data
  */
 export async function extractReceiptData(
-  fileBuffer: Buffer,
-  mimeType: string
+  files: { buffer: Buffer; mimeType: string }[] | Buffer,
+  mimeType?: string
 ): Promise<ReceiptData> {
+  // Backward compatibility: Convert single buffer to array format
+  const fileArray = Array.isArray(files) 
+    ? files 
+    : [{ buffer: files, mimeType: mimeType! }];
   try {
     // Validate API key at runtime
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -143,32 +147,47 @@ export async function extractReceiptData(
       throw new Error('ANTHROPIC_API_KEY has invalid format');
     }
 
-    // Compress image if needed to meet Anthropic's 5MB limit
-    const { buffer: processedBuffer, mimeType: processedMimeType } = 
-      await compressImageIfNeeded(fileBuffer, mimeType);
+    // Process all files
+    const processedFiles: Array<{
+      base64Data: string;
+      mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+      contentType: 'image' | 'document';
+    }> = [];
 
-    // Convert buffer to base64
-    const base64Data = processedBuffer.toString('base64');
+    for (const file of fileArray) {
+      // Compress image if needed to meet Anthropic's 5MB limit
+      const { buffer: processedBuffer, mimeType: processedMimeType } = 
+        await compressImageIfNeeded(file.buffer, file.mimeType);
 
-    // Determine media type for Claude
-    // Note: Claude API supports PDFs via document type, not image type
-    let mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
-    let contentType: 'image' | 'document' = 'image';
-    
-    if (processedMimeType === 'image/jpeg' || processedMimeType === 'image/jpg') {
-      mediaType = 'image/jpeg';
-    } else if (processedMimeType === 'image/png') {
-      mediaType = 'image/png';
-    } else if (processedMimeType === 'application/pdf') {
-      // For PDFs, we'll use document type
-      mediaType = 'image/png'; // placeholder, will use document type
-      contentType = 'document';
-    } else {
-      throw new Error(`Unsupported file type: ${processedMimeType}`);
+      // Convert buffer to base64
+      const base64Data = processedBuffer.toString('base64');
+
+      // Determine media type for Claude
+      let mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+      let contentType: 'image' | 'document' = 'image';
+      
+      if (processedMimeType === 'image/jpeg' || processedMimeType === 'image/jpg') {
+        mediaType = 'image/jpeg';
+      } else if (processedMimeType === 'image/png') {
+        mediaType = 'image/png';
+      } else if (processedMimeType === 'application/pdf') {
+        // For PDFs, we'll use document type
+        mediaType = 'image/png'; // placeholder, will use document type
+        contentType = 'document';
+      } else {
+        throw new Error(`Unsupported file type: ${processedMimeType}`);
+      }
+
+      processedFiles.push({ base64Data, mediaType, contentType });
     }
 
     // Create the prompt for Claude
-    const prompt = `Analysiere diesen Beleg und extrahiere die folgenden Informationen. Gib die Daten im JSON-Format zurück.
+    const isMultiImage = processedFiles.length > 1;
+    const multiImageNote = isMultiImage 
+      ? `\n\nWICHTIG: Du erhältst ${processedFiles.length} Bilder, die TEILE EINES EINZIGEN BELEGS sind (z.B. ein langer Kassenbon, der in mehrere Teile fotografiert wurde). Analysiere ALLE Bilder zusammen als EINEN Beleg und extrahiere die Gesamtinformationen.\n\n`
+      : '';
+    
+    const prompt = `Analysiere diesen Beleg und extrahiere die folgenden Informationen. Gib die Daten im JSON-Format zurück.${multiImageNote}
 
 WICHTIG:
 - Alle Beträge in Euro (€) als Zahlen ohne Währungssymbol
@@ -261,35 +280,45 @@ Gib NUR das JSON zurück, ohne zusätzlichen Text oder Markdown-Formatierung.`;
       try {
         console.log(`[Receipt OCR] Trying model: ${model}`);
         
+        // Build content array with all images/documents
+        const content: Array<any> = [];
+        
+        // Add all files
+        for (const file of processedFiles) {
+          if (file.contentType === 'document') {
+            content.push({
+              type: 'document' as const,
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: file.base64Data,
+              },
+            });
+          } else {
+            content.push({
+              type: 'image' as const,
+              source: {
+                type: 'base64',
+                media_type: file.mediaType,
+                data: file.base64Data,
+              },
+            });
+          }
+        }
+        
+        // Add prompt text at the end
+        content.push({
+          type: 'text',
+          text: prompt,
+        });
+        
         message = await anthropic.messages.create({
           model: model,
           max_tokens: 1024,
           messages: [
             {
               role: 'user',
-              content: [
-                contentType === 'document' 
-                  ? {
-                      type: 'document' as const,
-                      source: {
-                        type: 'base64',
-                        media_type: 'application/pdf',
-                        data: base64Data,
-                      },
-                    }
-                  : {
-                      type: 'image' as const,
-                      source: {
-                        type: 'base64',
-                        media_type: mediaType,
-                        data: base64Data,
-                      },
-                    },
-                {
-                  type: 'text',
-                  text: prompt,
-                },
-              ],
+              content,
             },
           ],
         });

@@ -10,7 +10,8 @@
     "search": "Suchen",
     "filter": "Filtern",
     "logout": "Abmelden",
-    "user": "Benutzer"
+    "user": "Benutzer",
+    "download": "Herunterladen"
   },
   "navigation": {
     "dashboard": "Dashboard",

@@ -39,51 +39,67 @@ function validateFileSignature(buffer: Buffer, mimeType: string): boolean {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get the file from the request
+    // Get the files from the request
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const files = formData.getAll('files') as File[];
 
-    if (!file) {
+    if (!files || files.length === 0) {
       return NextResponse.json(
-        { error: 'No file provided' },
+        { error: 'No files provided' },
         { status: 400 }
       );
     }
 
-    // Validate file type (browser-provided MIME type)
+    // Validate file types and sizes
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'Invalid file type. Only JPG, PNG, and PDF are supported.' },
-        { status: 400 }
-      );
-    }
-
-    // Validate file size (10MB max)
     const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
+    const maxFiles = 5;
+
+    if (files.length > maxFiles) {
       return NextResponse.json(
-        { error: 'File too large. Maximum size is 10MB.' },
+        { error: `Maximum ${maxFiles} files allowed` },
         { status: 400 }
       );
     }
 
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Process all files
+    const fileBuffers: { buffer: Buffer; mimeType: string }[] = [];
 
-    // Validate actual file content (Magic Number validation)
-    // This prevents malicious files disguised with wrong extensions
-    const isValidFile = validateFileSignature(buffer, file.type);
-    if (!isValidFile) {
-      return NextResponse.json(
-        { error: 'File content does not match the declared type. Possible security risk.' },
-        { status: 400 }
-      );
+    for (const file of files) {
+      // Validate file type
+      if (!allowedTypes.includes(file.type)) {
+        return NextResponse.json(
+          { error: `Invalid file type: ${file.name}. Only JPG, PNG, and PDF are supported.` },
+          { status: 400 }
+        );
+      }
+
+      // Validate file size
+      if (file.size > maxSize) {
+        return NextResponse.json(
+          { error: `File too large: ${file.name}. Maximum size is 10MB.` },
+          { status: 400 }
+        );
+      }
+
+      // Convert file to buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Validate actual file content (Magic Number validation)
+      const isValidFile = validateFileSignature(buffer, file.type);
+      if (!isValidFile) {
+        return NextResponse.json(
+          { error: `File content does not match the declared type: ${file.name}. Possible security risk.` },
+          { status: 400 }
+        );
+      }
+
+      fileBuffers.push({ buffer, mimeType: file.type });
     }
 
-    // Extract receipt data using Claude
-    const extractedData = await extractReceiptData(buffer, file.type);
+    // Extract receipt data using Claude (with multi-image support)
+    const extractedData = await extractReceiptData(fileBuffers);
 
     return NextResponse.json({
       success: true,

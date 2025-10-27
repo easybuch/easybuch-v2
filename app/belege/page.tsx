@@ -27,6 +27,7 @@ export default function BelegePage() {
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [signedUrls, setSignedUrls] = useState<string[] | null>(null);
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
@@ -116,18 +117,39 @@ export default function BelegePage() {
 
   const handleViewReceipt = async (receipt: Receipt) => {
     try {
-      // Generate signed URL for private bucket (valid for 1 hour)
-      const { data, error } = await supabase.storage
-        .from('receipts')
-        .createSignedUrl(receipt.file_url, 3600);
+      // Check if multi-image receipt
+      if (receipt.file_paths && receipt.file_paths.length > 1) {
+        // Generate signed URLs for all files
+        const urls: string[] = [];
+        for (const filePath of receipt.file_paths) {
+          const { data, error } = await supabase.storage
+            .from('receipts')
+            .createSignedUrl(filePath.path, 3600);
 
-      if (error) throw error;
+          if (error) throw error;
+          if (data?.signedUrl) {
+            urls.push(data.signedUrl);
+          }
+        }
+        
+        setSignedUrls(urls);
+        setSignedUrl(urls[0]); // Set first as primary
+      } else {
+        // Single image - use file_url
+        const { data, error } = await supabase.storage
+          .from('receipts')
+          .createSignedUrl(receipt.file_url, 3600);
 
-      if (data?.signedUrl) {
-        setSignedUrl(data.signedUrl);
-        setSelectedReceipt(receipt);
-        setIsModalOpen(true);
+        if (error) throw error;
+
+        if (data?.signedUrl) {
+          setSignedUrl(data.signedUrl);
+          setSignedUrls(null);
+        }
       }
+      
+      setSelectedReceipt(receipt);
+      setIsModalOpen(true);
     } catch (err) {
       console.error('Error generating signed URL:', err);
       alert(t('receipts.uploadError'));
@@ -326,10 +348,12 @@ export default function BelegePage() {
           setIsModalOpen(false);
           setSelectedReceipt(null);
           setSignedUrl(null);
+          setSignedUrls(null);
         }}
         onSave={handleSaveReceipt}
         onDelete={handleDeleteReceipt}
         signedUrl={signedUrl}
+        signedUrls={signedUrls}
       />
 
       {/* Receipts Grid */}
