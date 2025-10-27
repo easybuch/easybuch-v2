@@ -281,7 +281,9 @@ Gib NUR das JSON zurück, ohne zusätzlichen Text oder Markdown-Formatierung.`;
         console.log(`[Receipt OCR] Trying model: ${model}`);
         
         // Build content array with all images/documents
-        const content: Array<any> = [];
+        const content: Anthropic.MessageParam['content'] extends string 
+          ? never 
+          : NonNullable<Anthropic.MessageParam['content']> = [];
         
         // Add all files
         for (const file of processedFiles) {

@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, Camera, X, FileText } from 'lucide-react';
+import { Upload, Camera, FileText } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { cn } from '@/utils/cn';
 
@@ -110,17 +110,6 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
       const filesArray = Array.from(files);
       onDrop(filesArray, []);
     }
-  };
-
-  const handleRemoveFile = (fileId: string) => {
-    const newFiles = uploadedFiles.filter(f => f.id !== fileId);
-    onFileSelect(newFiles);
-    setLocalError(null);
-  };
-
-  const handleClearAll = () => {
-    onFileSelect([]);
-    setLocalError(null);
   };
 
   const formatFileSize = (bytes: number): string => {
