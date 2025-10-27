@@ -5,11 +5,13 @@ Ein moderner Online-Service für Selbständige und kleine Unternehmen. Fotografi
 ## Hauptfunktionen
 
 - **Automatische Belegerkennung** - OCR-basierte Extraktion von Beträgen, Händler, Datum und Kategorie
+- **Multi-Image Upload** - Mehrteilige Belege können als mehrere Bilder hochgeladen werden
+- **MwSt-Aufschlüsselung** - Separate Erkennung von 7% und 19% Mehrwertsteuer
 - **Belegverwaltung** - Übersichtliche Verwaltung aller hochgeladenen Belege
 - **Filter & Suche** - Nach Kategorie, Datum und Händler filtern
 - **Sichere Authentifizierung** - Mit Supabase Auth inkl. Passwort-Reset
 - **Mehrsprachig** - Deutsch und Russisch vollständig unterstützt
-- **Duplikat-Erkennung** - Automatische Erkennung bereits hochgeladener Belege
+- **Duplikat-Erkennung** - Automatische Erkennung bereits hochgeladener Belege via File-Hash
 - **Dashboard** - Übersicht über Belege und Ausgaben
 
 ## Tech Stack
@@ -17,6 +19,7 @@ Ein moderner Online-Service für Selbständige und kleine Unternehmen. Fotografi
 - **Next.js 14** mit App Router
 - **TypeScript** für Type-Safety
 - **Supabase** für Backend & Authentifizierung
+- **Anthropic Claude 3.5 Sonnet** für OCR & Multi-Image-Analyse
 - **Tailwind CSS** mit Custom Design Tokens
 - **Responsive Design** (Mobile-First)
 - **Atomic Design** Komponenten-Architektur
@@ -157,8 +160,8 @@ easybuch/
 
 ### Molecules (Zusammengesetzte Komponenten)
 
-- **FileUploadZone**: Drag & Drop Upload mit Vorschau
-- **ReceiptDetailModal**: Detailansicht mit Bearbeitung
+- **FileUploadZone**: Drag & Drop Upload mit Multi-File-Support und Grid-Vorschau
+- **ReceiptDetailModal**: Detailansicht mit Bearbeitung und Multi-Image-Display
 
 ### Organisms (Komplexe Komponenten)
 
@@ -212,8 +215,23 @@ Die Anwendung nutzt Supabase Auth mit folgenden Features:
 
 Supabase PostgreSQL mit folgenden Haupttabellen:
 
-- **receipts**: Beleg-Daten mit OCR-Ergebnissen
-- **users**: Benutzer-Authentifizierung (Supabase Auth)
+### receipts
+Beleg-Daten mit OCR-Ergebnissen:
+- `file_url`: Primärer Dateipfad (Haupt-Bild)
+- `file_paths`: JSONB Array für Multi-Image-Belege `[{path, order}]`
+- `file_hash`: SHA-256 Hash für Duplikat-Erkennung
+- `amount_net`, `amount_tax`, `amount_gross`: Basis-Beträge
+- `vat_7_net`, `vat_7_tax`: 7% MwSt-Aufschlüsselung
+- `vat_19_net`, `vat_19_tax`: 19% MwSt-Aufschlüsselung
+- `receipt_date`, `category`, `vendor`, `notes`: Metadaten
+- `raw_ocr_text`: Vollständiger OCR-Text
+
+### users
+Benutzer-Authentifizierung (Supabase Auth)
+
+### Migrations
+- `add_file_hash.sql`: File-Hash für Duplikat-Erkennung
+- `add_receipt_files_array.sql`: Multi-Image-Support mit automatischem Trigger
 
 ## Deployment
 
@@ -229,6 +247,21 @@ vercel --prod
 
 Stellen Sie sicher, dass alle Umgebungsvariablen in Vercel konfiguriert sind.
 
+## Changelog
+
+### Version 2.0 (Oktober 2025)
+- ✅ Multi-Image Upload für mehrteilige Belege
+- ✅ MwSt-Aufschlüsselung (7% und 19%)
+- ✅ Claude 3.5 Sonnet Integration
+- ✅ Grid-Ansicht für mehrere Bilder
+- ✅ Verbesserte Download-Funktionalität
+
+### Version 1.0 (Initial Release)
+- ✅ Basis OCR-Funktionalität
+- ✅ Beleg-Verwaltung
+- ✅ Authentifizierung
+- ✅ Duplikat-Erkennung
+
 ## Roadmap
 
 - [ ] Export-Funktionen (PDF, CSV)
@@ -237,6 +270,7 @@ Stellen Sie sicher, dass alle Umgebungsvariablen in Vercel konfiguriert sind.
 - [ ] Weitere Sprachen (EN, FR, ES)
 - [ ] Automatische Kategorisierung mit KI
 - [ ] Steuerberater-Integration
+- [ ] Bulk-Upload für mehrere Belege
 
 ## Lizenz
 
