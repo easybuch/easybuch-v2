@@ -103,15 +103,6 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
     fileInputRef.current?.click();
   };
 
-  // Handle manual file input change
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const filesArray = Array.from(files);
-      onDrop(filesArray, []);
-    }
-  };
-
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
