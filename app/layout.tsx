@@ -12,6 +12,9 @@ const notoSans = Noto_Sans({
 export const metadata = {
   title: 'EasyBuch - Digitale Belegverwaltung',
   description: 'Online-Service für Selbständige und kleine Unternehmen. Fotografieren Sie Ihren Beleg – EasyBuch erkennt, sortiert und speichert ihn automatisch.',
+  icons: {
+    icon: '/icon.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
