@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, Camera, FileText } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { cn } from '@/utils/cn';
+import { compressImage } from '@/utils/image-compression';
 
 export interface UploadedFile {
   file: File;
@@ -31,7 +32,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onDrop = useCallback(
-    (acceptedFiles: File[], rejectedFiles: unknown[]) => {
+    async (acceptedFiles: File[], rejectedFiles: unknown[]) => {
       setLocalError(null);
 
       if (rejectedFiles.length > 0) {
@@ -50,40 +51,50 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
         return;
       }
 
-      // Process all files
-      const newFiles: UploadedFile[] = [];
-      let processedCount = 0;
+      try {
+        // Compress images before processing
+        const compressedFiles = await Promise.all(
+          acceptedFiles.map(file => compressImage(file))
+        );
 
-      acceptedFiles.forEach((file) => {
-        const fileId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Create preview for images
-        if (file.type.startsWith('image/')) {
-          const reader = new FileReader();
-          reader.onload = () => {
-            newFiles.push({
-              file,
-              preview: reader.result as string,
-              id: fileId,
-            });
+        // Process all files
+        const newFiles: UploadedFile[] = [];
+        let processedCount = 0;
+
+        compressedFiles.forEach((file) => {
+          const fileId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Create preview for images
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = () => {
+              newFiles.push({
+                file,
+                preview: reader.result as string,
+                id: fileId,
+              });
+              processedCount++;
+              
+              // When all files are processed, update state
+              if (processedCount === compressedFiles.length) {
+                onFileSelect([...uploadedFiles, ...newFiles]);
+              }
+            };
+            reader.readAsDataURL(file);
+          } else {
+            newFiles.push({ file, id: fileId });
             processedCount++;
             
             // When all files are processed, update state
-            if (processedCount === acceptedFiles.length) {
+            if (processedCount === compressedFiles.length) {
               onFileSelect([...uploadedFiles, ...newFiles]);
             }
-          };
-          reader.readAsDataURL(file);
-        } else {
-          newFiles.push({ file, id: fileId });
-          processedCount++;
-          
-          // When all files are processed, update state
-          if (processedCount === acceptedFiles.length) {
-            onFileSelect([...uploadedFiles, ...newFiles]);
           }
-        }
-      });
+        });
+      } catch (error) {
+        console.error('Compression error:', error);
+        setLocalError('Fehler beim Komprimieren der Bilder. Bitte versuchen Sie es erneut.');
+      }
     },
     [onFileSelect, t, uploadedFiles]
   );
