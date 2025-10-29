@@ -337,17 +337,34 @@ Gib NUR das JSON zurück, ohne zusätzlichen Text oder Markdown-Formatierung.`;
           continue;
         }
         
-        // For other errors (auth, rate limit, etc.), throw immediately
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        // For other errors (auth, rate limit, etc.), wrap and throw
+        let errorMessage = 'Unknown error';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (error && typeof error === 'object' && 'message' in error) {
+          errorMessage = String(error.message);
+        }
+        
         console.error(`[Receipt OCR] ✗ Error with model ${model}:`, errorMessage);
-        throw error;
+        
+        // Throw a clean Error object instead of the raw SDK error
+        throw new Error(`Claude API error: ${errorMessage}`);
       }
     }
 
-    // If we exhausted all models, throw the last error
+    // If we exhausted all models, throw a clean error
     if (!message) {
       console.error('[Receipt OCR] ✗ All models failed!');
-      throw lastError || new Error('All Claude models unavailable');
+      
+      // Extract error message from lastError if available
+      let errorMessage = 'All Claude models unavailable';
+      if (lastError instanceof Error) {
+        errorMessage = lastError.message;
+      } else if (lastError && typeof lastError === 'object' && 'message' in lastError) {
+        errorMessage = String(lastError.message);
+      }
+      
+      throw new Error(`Claude API error: ${errorMessage}`);
     }
 
     // Extract the response text

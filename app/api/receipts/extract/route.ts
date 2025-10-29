@@ -108,26 +108,42 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error in receipt extraction API:', error);
 
-    // Handle specific error types
-    if (error instanceof Error) {
-      if (error.message.includes('ANTHROPIC_API_KEY')) {
-        return NextResponse.json(
-          { error: 'OCR service not configured. Please contact support.' },
-          { status: 500 }
-        );
-      }
+    // Extract error message safely from various error types
+    let errorMessage = 'Failed to extract receipt data. Please try again.';
+    let statusCode = 500;
 
-      if (error.message.includes('Unsupported file type')) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 400 }
-        );
+    if (error instanceof Error) {
+      // Check for specific error types
+      if (error.message.includes('ANTHROPIC_API_KEY')) {
+        errorMessage = 'OCR service not configured. Please contact support.';
+      } else if (error.message.includes('Unsupported file type')) {
+        errorMessage = error.message;
+        statusCode = 400;
+      } else {
+        // Use the error message but sanitize it
+        errorMessage = error.message;
+      }
+    } else if (error && typeof error === 'object') {
+      // Handle Anthropic SDK errors which may have various structures
+      if ('message' in error && typeof error.message === 'string') {
+        errorMessage = error.message;
+      } else if ('error' in error && typeof error.error === 'object' && error.error !== null) {
+        const err = error.error as Record<string, unknown>;
+        if ('message' in err && typeof err.message === 'string') {
+          errorMessage = err.message;
+        }
+      }
+      
+      // Check for status code in error object
+      if ('status' in error && typeof error.status === 'number') {
+        statusCode = error.status >= 400 && error.status < 600 ? error.status : 500;
       }
     }
 
+    // Always return a valid JSON response
     return NextResponse.json(
-      { error: 'Failed to extract receipt data. Please try again.' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: statusCode }
     );
   }
 }
