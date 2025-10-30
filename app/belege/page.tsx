@@ -9,7 +9,7 @@ import { Card, CardTitle, CardContent } from '@/components/atoms/Card';
 import { FileText, Search, Calendar, Coins, Loader2, Tag, Store } from 'lucide-react';
 import { ReceiptDetailModal } from '@/components/molecules/ReceiptDetailModal';
 import { CategoryFilter } from '@/components/molecules/CategoryFilter';
-import { supabase, supabaseUntyped } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
 import { getCategoryTranslationKey } from '@/lib/category-mapping';
