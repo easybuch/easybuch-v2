@@ -397,14 +397,11 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* Empty State */}
-          {uploadedFiles.length === 0 && !isExtracting && !extractedData && !extractionError && (
+          {/* Empty State - Show until extraction starts */}
+          {!isExtracting && !extractedData && !extractionError && (
             <div className="p-8 text-center">
               <Sparkles size={48} className="text-gray-300 mx-auto mb-4" />
-              <p className="text-text-secondary mb-2">{t('receipts.extractedData')}</p>
-              <p className="text-sm text-text-footer">
-                {t('receipts.dragDrop')}
-              </p>
+              <p className="text-text-secondary">{t('receipts.extractedData')}</p>
             </div>
           )}
         </Card>
