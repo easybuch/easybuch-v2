@@ -13,7 +13,6 @@ interface ReceiptDetailModalProps {
   receipt: Receipt | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (id: string, updates: Partial<Receipt>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   signedUrl: string | null;
   signedUrls?: string[] | null; // For multi-image receipts
@@ -24,7 +23,6 @@ export const ReceiptDetailModal = ({
   receipt,
   isOpen,
   onClose,
-  onSave,
   onDelete,
   signedUrl,
   signedUrls,

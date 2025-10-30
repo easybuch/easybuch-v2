@@ -156,29 +156,6 @@ export default function BelegePage() {
     }
   };
 
-  const handleSaveReceipt = async (id: string, updates: Partial<Receipt>) => {
-    try {
-      const { error } = await supabaseUntyped
-        .from('receipts')
-        .update({
-          receipt_date: updates.receipt_date ?? null,
-          category: updates.category ?? null,
-          vendor: updates.vendor ?? null,
-          notes: updates.notes ?? null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      // Refresh receipts list
-      await fetchReceipts();
-    } catch (err) {
-      console.error('Error updating receipt:', err);
-      throw err;
-    }
-  };
-
   const handleDeleteReceipt = async (id: string) => {
     try {
       const receipt = receipts.find((r) => r.id === id);
@@ -333,7 +310,6 @@ export default function BelegePage() {
           setSignedUrl(null);
           setSignedUrls(null);
         }}
-        onSave={handleSaveReceipt}
         onDelete={handleDeleteReceipt}
         signedUrl={signedUrl}
         signedUrls={signedUrls}
