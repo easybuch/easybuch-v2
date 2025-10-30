@@ -215,7 +215,7 @@ export default function BelegePage() {
             {t('receipts.title')}
           </h1>
           <p className="text-text-secondary">
-            {t('receipts.title')}
+            {t('receipts.subtitle')}
           </p>
         </div>
         <Link href="/upload">
@@ -239,7 +239,7 @@ export default function BelegePage() {
               className="absolute left-4 top-1/2 -translate-y-1/2 text-text-footer"
             />
             <Input
-              placeholder="Nach Händler oder Dateiname suchen..."
+              placeholder={t('receipts.searchPlaceholder')}
               className="pl-12"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

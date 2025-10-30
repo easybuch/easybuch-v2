@@ -66,6 +66,8 @@
   },
   "receipts": {
     "title": "Meine Belege",
+    "subtitle": "Verwalten und überblicken Sie alle Ihre hochgeladenen Belege",
+    "searchPlaceholder": "Nach Händler oder Dateiname suchen...",
     "uploadNew": "Neuen Beleg hochladen",
     "addReceipt": "Beleg hinzufügen",
     "dragDrop": "Datei hierher ziehen oder klicken zum Hochladen",
