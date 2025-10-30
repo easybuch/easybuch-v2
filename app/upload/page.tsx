@@ -58,9 +58,13 @@ export default function UploadPage() {
     setExtractionError(null);
     setIsDuplicate(false);
 
-    // Extract data when files are selected
-    if (files.length > 0) {
-      await extractReceiptData(files);
+    // Don't auto-extract - user will trigger manually via button
+    // This allows adding multiple photos before extraction starts
+  };
+
+  const handleStartExtraction = async () => {
+    if (uploadedFiles.length > 0) {
+      await extractReceiptData(uploadedFiles);
     }
   };
 
@@ -216,6 +220,8 @@ export default function UploadPage() {
               onFileSelect={handleFileSelect}
               uploadedFiles={uploadedFiles}
               error={error}
+              onStartExtraction={handleStartExtraction}
+              isExtracting={isExtracting}
             />
             
             {/* Duplicate Warning - Removed for multi-image */}
