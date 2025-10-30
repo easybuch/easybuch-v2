@@ -22,6 +22,7 @@ import {
 import { useLanguage } from '@/lib/language-context';
 import { RECEIPT_CATEGORIES, getCategoryTranslationKey } from '@/lib/category-mapping';
 import { cn } from '@/utils/cn';
+import type { LucideIcon } from 'lucide-react';
 
 interface CategoryFilterProps {
   value: string;
@@ -29,7 +30,7 @@ interface CategoryFilterProps {
 }
 
 // Icon-Mapping für alle Kategorien
-const CATEGORY_ICONS: Record<string, any> = {
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
   'all': Layers,
   'Büromaterial & Ausstattung': Briefcase,
   'Fahrtkosten (Kraftstoff & Parkplatz)': Car,

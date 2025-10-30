@@ -6,7 +6,7 @@ import { DashboardLayout } from '@/components/templates/DashboardLayout';
 import { Button } from '@/components/atoms/Button';
 import { Card } from '@/components/atoms/Card';
 import { FileUploadZone, UploadedFile } from '@/components/molecules/FileUploadZone';
-import { Save, X, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { Save, X, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';

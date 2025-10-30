@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { DashboardLayout } from '@/components/templates/DashboardLayout';
 import { Button } from '@/components/atoms/Button';
 import { Card } from '@/components/atoms/Card';
-import { Upload, FileText, Euro } from 'lucide-react';
+import { FileText, Euro } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';

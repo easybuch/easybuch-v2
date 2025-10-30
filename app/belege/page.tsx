@@ -6,14 +6,14 @@ import Link from 'next/link';
 import { DashboardLayout } from '@/components/templates/DashboardLayout';
 import { Button } from '@/components/atoms/Button';
 import { Card, CardTitle, CardContent } from '@/components/atoms/Card';
-import { Upload, FileText, Search, Calendar, Coins, Loader2, Tag, Store } from 'lucide-react';
+import { FileText, Search, Calendar, Coins, Loader2, Tag, Store } from 'lucide-react';
 import { Input } from '@/components/atoms/Input';
 import { ReceiptDetailModal } from '@/components/molecules/ReceiptDetailModal';
 import { CategoryFilter } from '@/components/molecules/CategoryFilter';
 import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
-import { RECEIPT_CATEGORIES, getCategoryTranslationKey } from '@/lib/category-mapping';
+import { getCategoryTranslationKey } from '@/lib/category-mapping';
 import type { Receipt } from '@/lib/database.types';
 
 export default function BelegePage() {
