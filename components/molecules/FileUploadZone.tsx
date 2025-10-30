@@ -32,8 +32,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
   const { t } = useLanguage();
   const [localError, setLocalError] = useState<string | null>(null);
   const [fromCamera, setFromCamera] = useState(false); // Track if files came from camera
-  const cameraInputRef = useRef<HTMLInputElement>(null); // For "Weiteres Foto" - opens camera directly
-  const fileInputRef = useRef<HTMLInputElement>(null); // For initial upload - shows browser menu
+  const fileInputRef = useRef<HTMLInputElement>(null); // Shows browser menu for source selection
   const isCameraUploadRef = useRef(false); // Track current upload source
 
   const onDrop = useCallback(
@@ -113,24 +112,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     noKeyboard: false,
   });
 
-  // Handle camera input separately for mobile (direct camera from "Weiteres Foto")
-  const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    // Always treat "Weiteres Foto" as camera upload (show buttons)
-    isCameraUploadRef.current = true;
-    setFromCamera(true);
-    const fileArray = Array.from(files);
-    await onDrop(fileArray, []);
-    
-    // Reset input so same file can be selected again
-    if (cameraInputRef.current) {
-      cameraInputRef.current.value = '';
-    }
-  };
-
-  // Handle file input (shows browser menu with options)
+  // Handle file input (shows browser menu with source options)
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -152,18 +134,15 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     }
   };
 
-  // Custom click handler for camera button
-  const handleCameraClick = (e?: React.MouseEvent) => {
+  // Custom click handler for "Weiteres Foto" button
+  // Always opens browser menu so user can choose source: Camera, Gallery, Files, etc.
+  const handleAddMoreClick = (e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    console.log('Camera button clicked', cameraInputRef.current); // Debug log
-    if (cameraInputRef.current) {
-      cameraInputRef.current.click();
-    } else {
-      console.error('Camera input ref is null');
-    }
+    // Open fileInput - browser will show source selection menu
+    fileInputRef.current?.click();
   };
 
   // Custom click handler for initial upload zone (shows browser menu)
@@ -184,24 +163,13 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
 
   return (
     <div className="w-full h-full relative">
-      {/* Hidden file input for initial upload - shows browser menu with options */}
+      {/* Hidden file input - shows browser menu with source selection options */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*,application/pdf"
         multiple
         onChange={handleFileChange}
-        style={{ display: 'none' }}
-      />
-      
-      {/* Hidden camera input for "Weiteres Foto" - opens camera directly */}
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*,application/pdf"
-        capture="environment"
-        multiple
-        onChange={handleCameraChange}
         style={{ display: 'none' }}
       />
       
@@ -287,7 +255,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
                   <div className="space-y-2">
                     <button
                       type="button"
-                      onClick={handleCameraClick}
+                      onClick={handleAddMoreClick}
                       className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
                       disabled={isExtracting}
                     >
@@ -335,12 +303,12 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
               </div>
               
               <div className="p-6 border-t border-gray-200">
-                {/* Action Buttons - Only show for camera uploads */}
+                {/* Action Buttons - Only show for single file uploads */}
                 {fromCamera && (
                   <div className="space-y-2">
                     <button
                       type="button"
-                      onClick={handleCameraClick}
+                      onClick={handleAddMoreClick}
                       className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
                       disabled={isExtracting}
                     >
@@ -407,12 +375,12 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
               </div>
             </div>
             
-            {/* Mobile: Add more photos or start extraction - Only show for camera uploads */}
+            {/* Mobile: Add more photos or start extraction - Only show for single file uploads */}
             {fromCamera && (
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={handleCameraClick}
+                  onClick={handleAddMoreClick}
                   className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
                   disabled={isExtracting}
                 >
