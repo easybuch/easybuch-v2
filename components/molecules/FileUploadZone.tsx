@@ -14,9 +14,11 @@ export interface UploadedFile {
 }
 
 export interface FileUploadZoneProps {
-  onFileSelect: (files: UploadedFile[]) => void;
+  onFileSelect: (files: UploadedFile[], fromCamera: boolean) => void;
   uploadedFiles: UploadedFile[];
   error?: string | null;
+  onStartExtraction?: () => void;
+  isExtracting?: boolean;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -26,10 +28,12 @@ const ACCEPTED_FILE_TYPES = {
   'application/pdf': ['.pdf'],
 };
 
-export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploadZoneProps) {
+export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtraction, isExtracting }: FileUploadZoneProps) {
   const { t } = useLanguage();
   const [localError, setLocalError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fromCamera, setFromCamera] = useState(false); // Track if files came from camera
+  const fileInputRef = useRef<HTMLInputElement>(null); // Shows browser menu for source selection
+  const isCameraUploadRef = useRef(false); // Track current upload source
 
   const onDrop = useCallback(
     async (acceptedFiles: File[], rejectedFiles: unknown[]) => {
@@ -77,7 +81,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
               
               // When all files are processed, update state
               if (processedCount === compressedFiles.length) {
-                onFileSelect([...uploadedFiles, ...newFiles]);
+                onFileSelect([...uploadedFiles, ...newFiles], isCameraUploadRef.current);
               }
             };
             reader.readAsDataURL(file);
@@ -87,7 +91,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
             
             // When all files are processed, update state
             if (processedCount === compressedFiles.length) {
-              onFileSelect([...uploadedFiles, ...newFiles]);
+              onFileSelect([...uploadedFiles, ...newFiles], isCameraUploadRef.current);
             }
           }
         });
@@ -108,7 +112,40 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
     noKeyboard: false,
   });
 
-  // Custom click handler for better mobile support
+  // Handle file input (shows browser menu with source options)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    
+    // Smart detection: 
+    // - Single file = might take more photos = show buttons
+    // - Multiple files = obviously gallery = auto-extract
+    const isSingleFile = fileArray.length === 1;
+    isCameraUploadRef.current = isSingleFile;
+    setFromCamera(isSingleFile);
+    
+    await onDrop(fileArray, []);
+    
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Custom click handler for "Weiteres Foto" button
+  // Always opens browser menu so user can choose source: Camera, Gallery, Files, etc.
+  const handleAddMoreClick = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    // Open fileInput - browser will show source selection menu
+    fileInputRef.current?.click();
+  };
+
+  // Custom click handler for initial upload zone (shows browser menu)
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     fileInputRef.current?.click();
@@ -125,7 +162,17 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
   const displayError = error || localError;
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
+      {/* Hidden file input - shows browser menu with source selection options */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,application/pdf"
+        multiple
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+      
       {uploadedFiles.length === 0 ? (
         /* Upload Zone - No files */
         <div
@@ -142,7 +189,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
             displayError && 'border-red-300'
           )}
         >
-          <input {...getInputProps()} ref={fileInputRef} />
+          <input {...getInputProps()} />
 
           {/* Upload Icon */}
           <div className="mb-6">
@@ -203,14 +250,39 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
                   </div>
                 </div>
                 
-                {/* Change File Button */}
-                <button
-                  onClick={handleClick}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
-                >
-                  <Upload size={16} />
-                  Neuen Beleg hochladen
-                </button>
+                {/* Action Buttons - Only show for camera uploads */}
+                {fromCamera && (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={handleAddMoreClick}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
+                      disabled={isExtracting}
+                    >
+                      <Camera size={18} />
+                      <span>Weiteres Foto</span>
+                    </button>
+                    {onStartExtraction && (
+                      <button
+                        onClick={onStartExtraction}
+                        disabled={isExtracting}
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-brand text-white hover:bg-brand/90 rounded-button transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isExtracting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Analysiere...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>✓</span>
+                            <span>Jetzt analysieren</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -231,13 +303,39 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
               </div>
               
               <div className="p-6 border-t border-gray-200">
-                <button
-                  onClick={handleClick}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
-                >
-                  <Upload size={16} />
-                  Neuen Beleg hochladen
-                </button>
+                {/* Action Buttons - Only show for single file uploads */}
+                {fromCamera && (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={handleAddMoreClick}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
+                      disabled={isExtracting}
+                    >
+                      <Camera size={18} />
+                      <span>Weiteres Foto</span>
+                    </button>
+                    {onStartExtraction && (
+                      <button
+                        onClick={onStartExtraction}
+                        disabled={isExtracting}
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-brand text-white hover:bg-brand/90 rounded-button transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isExtracting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Analysiere...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>✓</span>
+                            <span>Jetzt analysieren</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -267,7 +365,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
           </div>
           
           {/* Action Bar */}
-          <div className="p-4 border-t-2 border-gray-200 bg-white">
+          <div className="p-4 border-t-2 border-gray-200 bg-white space-y-3">
             <div className="flex items-center justify-center">
               <div className="flex items-center gap-2 px-4 py-2 bg-green-100 rounded-pill">
                 <div className="w-2 h-2 rounded-full bg-green-600" />
@@ -276,6 +374,40 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
                 </span>
               </div>
             </div>
+            
+            {/* Mobile: Add more photos or start extraction - Only show for single file uploads */}
+            {fromCamera && (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddMoreClick}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
+                  disabled={isExtracting}
+                >
+                  <Camera size={18} />
+                  <span>Weiteres Foto</span>
+                </button>
+                {onStartExtraction && (
+                  <button
+                    onClick={onStartExtraction}
+                    disabled={isExtracting}
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-brand text-white hover:bg-brand/90 rounded-button transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isExtracting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Analysiere...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>✓</span>
+                        <span>Jetzt analysieren</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

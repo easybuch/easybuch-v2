@@ -2,6 +2,7 @@ import { Noto_Sans } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
 import { LanguageProvider } from '@/lib/language-context';
+import { ToastProvider } from '@/components/atoms/Toast';
 
 const notoSans = Noto_Sans({
   subsets: ['latin', 'cyrillic'],
@@ -22,7 +23,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="de">
       <body className={notoSans.className}>
         <LanguageProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </AuthProvider>
         </LanguageProvider>
       </body>
     </html>

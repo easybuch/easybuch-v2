@@ -6,10 +6,11 @@ import { DashboardLayout } from '@/components/templates/DashboardLayout';
 import { Button } from '@/components/atoms/Button';
 import { Card } from '@/components/atoms/Card';
 import { FileUploadZone, UploadedFile } from '@/components/molecules/FileUploadZone';
-import { Save, X, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { Save, X, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
+import { useToast } from '@/components/atoms/Toast';
 import { getCategoryTranslationKey } from '@/lib/category-mapping';
 import { generateFileHash } from '@/utils/file-hash';
 import type { ReceiptInsert } from '@/lib/database.types';
@@ -19,10 +20,10 @@ export default function UploadPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
+  const { showToast } = useToast();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedData, setExtractedData] = useState<ReceiptData | null>(null);
   const [extractionError, setExtractionError] = useState<string | null>(null);
@@ -50,17 +51,23 @@ export default function UploadPage() {
     return null;
   }
 
-  const handleFileSelect = async (files: UploadedFile[]) => {
+  const handleFileSelect = async (files: UploadedFile[], fromCamera: boolean) => {
     setUploadedFiles(files);
     setError(null);
-    setShowSuccess(false);
     setExtractedData(null);
     setExtractionError(null);
     setIsDuplicate(false);
 
-    // Extract data when files are selected
-    if (files.length > 0) {
+    // Auto-extract only for non-camera uploads (gallery, files, etc.)
+    if (!fromCamera && files.length > 0) {
       await extractReceiptData(files);
+    }
+    // For camera uploads, user clicks "Jetzt analysieren" button
+  };
+
+  const handleStartExtraction = async () => {
+    if (uploadedFiles.length > 0) {
+      await extractReceiptData(uploadedFiles);
     }
   };
 
@@ -170,8 +177,11 @@ export default function UploadPage() {
         throw new Error(`Database insert failed: ${dbError.message}`);
       }
 
-      // Success feedback
-      setShowSuccess(true);
+      // Show toast with category
+      const categoryText = extractedData?.kategorie 
+        ? `${t('receipts.uploadSuccessWithCategory')} "${t(getCategoryTranslationKey(extractedData.kategorie))}"`
+        : t('receipts.uploadSuccess');
+      showToast(categoryText, 'success', 3500);
 
       // Redirect after success
       setTimeout(() => {
@@ -213,6 +223,8 @@ export default function UploadPage() {
               onFileSelect={handleFileSelect}
               uploadedFiles={uploadedFiles}
               error={error}
+              onStartExtraction={handleStartExtraction}
+              isExtracting={isExtracting}
             />
             
             {/* Duplicate Warning - Removed for multi-image */}
@@ -385,14 +397,12 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* Empty State */}
-          {uploadedFiles.length === 0 && !isExtracting && !extractedData && !extractionError && (
+          {/* Empty State - Show until extraction starts */}
+          {!isExtracting && !extractedData && !extractionError && (
             <div className="p-8 text-center">
               <Sparkles size={48} className="text-gray-300 mx-auto mb-4" />
-              <p className="text-text-secondary mb-2">{t('receipts.extractedData')}</p>
-              <p className="text-sm text-text-footer">
-                {t('receipts.dragDrop')}
-              </p>
+              <p className="text-text-secondary font-semibold mb-2">{t('receipts.extractedData')}</p>
+              <p className="text-sm text-text-footer">{t('receipts.extractedDataPlaceholder')}</p>
             </div>
           )}
         </Card>
@@ -421,17 +431,6 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* Success Message */}
-      {showSuccess && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-button flex items-center gap-3">
-          <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
-          <div>
-            <p className="font-semibold text-green-800">{t('receipts.uploadSuccess')}</p>
-            <p className="text-sm text-green-700">{t('common.loading')}</p>
-          </div>
-        </div>
-      )}
-
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4 justify-end">
         <Button
@@ -446,7 +445,7 @@ export default function UploadPage() {
         <Button
           variant="primary"
           onClick={handleSave}
-          disabled={uploadedFiles.length === 0 || isSubmitting}
+          disabled={uploadedFiles.length === 0 || isSubmitting || !extractedData}
           className="sm:w-auto"
         >
           <Save size={20} className="mr-2" />

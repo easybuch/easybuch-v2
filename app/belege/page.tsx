@@ -6,13 +6,13 @@ import Link from 'next/link';
 import { DashboardLayout } from '@/components/templates/DashboardLayout';
 import { Button } from '@/components/atoms/Button';
 import { Card, CardTitle, CardContent } from '@/components/atoms/Card';
-import { Upload, FileText, Search, Calendar, Coins, Loader2, Tag, Store } from 'lucide-react';
-import { Input } from '@/components/atoms/Input';
+import { FileText, Search, Calendar, Coins, Loader2, Tag, Store } from 'lucide-react';
 import { ReceiptDetailModal } from '@/components/molecules/ReceiptDetailModal';
+import { CategoryFilter } from '@/components/molecules/CategoryFilter';
 import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
-import { RECEIPT_CATEGORIES, getCategoryTranslationKey } from '@/lib/category-mapping';
+import { getCategoryTranslationKey } from '@/lib/category-mapping';
 import type { Receipt } from '@/lib/database.types';
 
 export default function BelegePage() {
@@ -214,74 +214,57 @@ export default function BelegePage() {
             {t('receipts.title')}
           </h1>
           <p className="text-text-secondary">
-            {t('receipts.title')}
+            {t('receipts.subtitle')}
           </p>
         </div>
         <Link href="/upload">
           <Button variant="primary" className="mt-4 md:mt-0">
-            <Upload size={20} className="mr-2" />
-            {t('receipts.uploadNew')}
+            <span className="text-lg font-semibold mr-1">+</span>
+            {t('receipts.addReceipt')}
           </Button>
         </Link>
       </div>
 
-      {/* Search and Filter */}
-      <Card className="mb-8">
-        <div className="flex flex-col gap-4">
-          {/* Search Bar */}
-          <div className="flex-1 relative">
-            <Search
-              size={20}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-text-footer"
-            />
-            <Input
-              placeholder={t('receipts.filterByCategory')}
-              className="pl-12"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* Date Filter */}
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-text-secondary mb-1.5">
-                {t('receipts.uploadDate')}
-              </label>
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-button bg-white text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors"
-              >
-                <option value="all">{t('receipts.allDates')}</option>
-                <option value="last7days">{t('receipts.last7days')}</option>
-                <option value="last30days">{t('receipts.last30days')}</option>
-                <option value="last90days">{t('receipts.last90days')}</option>
-              </select>
-            </div>
-            
-            {/* Category Filter */}
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-text-secondary mb-1.5">
-                {t('receipts.category')}
-              </label>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-button bg-white text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors"
-              >
-                <option value="all">{t('receipts.allCategories')}</option>
-                {RECEIPT_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {t(getCategoryTranslationKey(category))}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </Card>
+      {/* Category Filter */}
+      <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} />
+
+{/* Search and Filter - Minimalistic */}
+<div className="mb-8 flex flex-col sm:flex-row gap-2">
+  {/* Search Bar */}
+  <div className="flex-1 relative group">
+    <Search
+      size={18}
+      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-brand transition-colors"
+    />
+    <input
+      type="text"
+      placeholder={t('receipts.searchPlaceholder')}
+      className="w-full pl-11 pr-4 py-2.5 text-sm border border-gray-200 rounded-button bg-white text-text-primary placeholder:text-text-tertiary hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+    />
+  </div>
+  
+  {/* Date Filter */}
+  <div className="relative sm:w-48 group">
+    <Calendar size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-brand transition-colors pointer-events-none z-10" />
+    <select
+      value={dateFilter}
+      onChange={(e) => setDateFilter(e.target.value)}
+      className="w-full pl-11 pr-10 py-2.5 text-sm border border-gray-200 rounded-button bg-white text-text-primary hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all appearance-none cursor-pointer"
+    >
+      <option value="all">{t('receipts.allDates')}</option>
+      <option value="last7days">{t('receipts.last7days')}</option>
+      <option value="last30days">{t('receipts.last30days')}</option>
+      <option value="last90days">{t('receipts.last90days')}</option>
+    </select>
+    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+        <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-tertiary"/>
+      </svg>
+    </div>
+  </div>
+</div>
 
       {/* Loading State */}
       {isLoading && (
@@ -317,8 +300,8 @@ export default function BelegePage() {
               </p>
               <Link href="/upload">
                 <Button variant="primary">
-                  <Upload size={20} className="mr-2" />
-                  {t('receipts.uploadNew')}
+                  <span className="text-lg font-semibold mr-1">+</span>
+                  {t('receipts.addReceipt')}
                 </Button>
               </Link>
             </CardContent>
