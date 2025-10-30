@@ -14,7 +14,7 @@ export interface UploadedFile {
 }
 
 export interface FileUploadZoneProps {
-  onFileSelect: (files: UploadedFile[]) => void;
+  onFileSelect: (files: UploadedFile[], fromCamera: boolean) => void;
   uploadedFiles: UploadedFile[];
   error?: string | null;
   onStartExtraction?: () => void;
@@ -34,6 +34,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
   const [fromCamera, setFromCamera] = useState(false); // Track if files came from camera
   const cameraInputRef = useRef<HTMLInputElement>(null); // For "Weiteres Foto" - opens camera directly
   const fileInputRef = useRef<HTMLInputElement>(null); // For initial upload - shows browser menu
+  const isCameraUploadRef = useRef(false); // Track current upload source
 
   const onDrop = useCallback(
     async (acceptedFiles: File[], rejectedFiles: unknown[]) => {
@@ -81,7 +82,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
               
               // When all files are processed, update state
               if (processedCount === compressedFiles.length) {
-                onFileSelect([...uploadedFiles, ...newFiles]);
+                onFileSelect([...uploadedFiles, ...newFiles], isCameraUploadRef.current);
               }
             };
             reader.readAsDataURL(file);
@@ -91,7 +92,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
             
             // When all files are processed, update state
             if (processedCount === compressedFiles.length) {
-              onFileSelect([...uploadedFiles, ...newFiles]);
+              onFileSelect([...uploadedFiles, ...newFiles], isCameraUploadRef.current);
             }
           }
         });
@@ -117,7 +118,8 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    setFromCamera(true); // Mark as from camera
+    isCameraUploadRef.current = true; // Mark upload as from camera
+    setFromCamera(true); // Update state for UI
     const fileArray = Array.from(files);
     await onDrop(fileArray, []);
     
@@ -133,7 +135,8 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    setFromCamera(false); // Mark as NOT from camera (gallery, files, etc.)
+    isCameraUploadRef.current = false; // Mark upload as NOT from camera
+    setFromCamera(false); // Update state for UI
     const fileArray = Array.from(files);
     await onDrop(fileArray, []);
     
@@ -141,14 +144,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    
-    // Auto-start extraction for gallery/file uploads
-    if (onStartExtraction && fileArray.length > 0) {
-      // Small delay to ensure files are processed
-      setTimeout(() => {
-        onStartExtraction();
-      }, 100);
-    }
+    // Auto-extraction will be handled in upload page based on fromCamera flag
   };
 
   // Custom click handler for camera button

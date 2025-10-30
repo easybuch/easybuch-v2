@@ -51,15 +51,18 @@ export default function UploadPage() {
     return null;
   }
 
-  const handleFileSelect = async (files: UploadedFile[]) => {
+  const handleFileSelect = async (files: UploadedFile[], fromCamera: boolean) => {
     setUploadedFiles(files);
     setError(null);
     setExtractedData(null);
     setExtractionError(null);
     setIsDuplicate(false);
 
-    // Don't auto-extract - user will trigger manually via button
-    // This allows adding multiple photos before extraction starts
+    // Auto-extract only for non-camera uploads (gallery, files, etc.)
+    if (!fromCamera && files.length > 0) {
+      await extractReceiptData(files);
+    }
+    // For camera uploads, user clicks "Jetzt analysieren" button
   };
 
   const handleStartExtraction = async () => {
