@@ -208,8 +208,8 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
                   onClick={handleClick}
                   className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
                 >
-                  <Upload size={16} />
-                  Neuen Beleg hochladen
+                  <span className="text-lg font-semibold">+</span>
+                  {t('receipts.addReceipt')}
                 </button>
               </div>
             </div>
@@ -235,8 +235,8 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error }: FileUploa
                   onClick={handleClick}
                   className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
                 >
-                  <Upload size={16} />
-                  Neuen Beleg hochladen
+                  <span className="text-lg font-semibold">+</span>
+                  {t('receipts.addReceipt')}
                 </button>
               </div>
             </div>

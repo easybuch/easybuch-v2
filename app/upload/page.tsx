@@ -10,6 +10,7 @@ import { Save, X, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-rea
 import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
+import { useToast } from '@/components/atoms/Toast';
 import { getCategoryTranslationKey } from '@/lib/category-mapping';
 import { generateFileHash } from '@/utils/file-hash';
 import type { ReceiptInsert } from '@/lib/database.types';
@@ -19,10 +20,10 @@ export default function UploadPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
+  const { showToast } = useToast();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedData, setExtractedData] = useState<ReceiptData | null>(null);
   const [extractionError, setExtractionError] = useState<string | null>(null);
@@ -53,7 +54,6 @@ export default function UploadPage() {
   const handleFileSelect = async (files: UploadedFile[]) => {
     setUploadedFiles(files);
     setError(null);
-    setShowSuccess(false);
     setExtractedData(null);
     setExtractionError(null);
     setIsDuplicate(false);
@@ -170,8 +170,11 @@ export default function UploadPage() {
         throw new Error(`Database insert failed: ${dbError.message}`);
       }
 
-      // Success feedback
-      setShowSuccess(true);
+      // Show toast with category
+      const categoryText = extractedData?.kategorie 
+        ? `${t('receipts.uploadSuccessWithCategory')} "${t(getCategoryTranslationKey(extractedData.kategorie))}"`
+        : t('receipts.uploadSuccess');
+      showToast(categoryText, 'success', 3500);
 
       // Redirect after success
       setTimeout(() => {
@@ -417,17 +420,6 @@ export default function UploadPage() {
           <div>
             <p className="font-semibold text-red-800">{t('receipts.uploadError')}</p>
             <p className="text-sm text-red-700">{error}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Success Message */}
-      {showSuccess && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-button flex items-center gap-3">
-          <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
-          <div>
-            <p className="font-semibold text-green-800">{t('receipts.uploadSuccess')}</p>
-            <p className="text-sm text-green-700">{t('common.loading')}</p>
           </div>
         </div>
       )}

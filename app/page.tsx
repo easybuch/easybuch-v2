@@ -114,8 +114,8 @@ export default function HomePage() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Link href="/upload" className="w-full sm:w-auto">
             <Button variant="primary" className="w-full min-w-[240px]">
-              <Upload size={20} className="mr-2" />
-              {t('receipts.uploadNew')}
+              <span className="text-lg font-semibold mr-1">+</span>
+              {t('receipts.addReceipt')}
             </Button>
           </Link>
           <Link href="/belege" className="w-full sm:w-auto">

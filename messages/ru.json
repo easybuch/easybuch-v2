@@ -67,11 +67,13 @@
   "receipts": {
     "title": "Мои чеки",
     "uploadNew": "Загрузить новый чек",
+    "addReceipt": "Добавить чек",
     "dragDrop": "Перетащите файл сюда или нажмите для загрузки",
     "supportedFormats": "Поддерживаемые форматы: JPG, PNG, PDF (макс. 10МБ)",
     "uploading": "Загрузка...",
     "analyzing": "Анализ...",
     "uploadSuccess": "Чек успешно загружен",
+    "uploadSuccessWithCategory": "Чек сохранен в",
     "uploadError": "Ошибка при загрузке",
     "duplicateReceipt": "Этот чек уже загружен",
     "duplicateReceiptMessage": "Идентичный чек уже существует в вашей системе. Вы хотите загрузить его в любом случае?",

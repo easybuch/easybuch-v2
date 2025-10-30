@@ -67,11 +67,13 @@
   "receipts": {
     "title": "Meine Belege",
     "uploadNew": "Neuen Beleg hochladen",
+    "addReceipt": "Beleg hinzufügen",
     "dragDrop": "Datei hierher ziehen oder klicken zum Hochladen",
     "supportedFormats": "Unterstützte Formate: JPG, PNG, PDF (max. 10MB)",
     "uploading": "Wird hochgeladen...",
     "analyzing": "Wird analysiert...",
     "uploadSuccess": "Beleg erfolgreich hochgeladen",
+    "uploadSuccessWithCategory": "Beleg gespeichert unter",
     "uploadError": "Fehler beim Hochladen",
     "duplicateReceipt": "Dieser Beleg wurde bereits hochgeladen",
     "duplicateReceiptMessage": "Ein identischer Beleg existiert bereits in Ihrem System. Möchten Sie ihn trotzdem hochladen?",
