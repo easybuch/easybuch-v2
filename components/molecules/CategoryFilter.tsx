@@ -124,12 +124,7 @@ export function CategoryFilter({ value, onChange }: CategoryFilterProps) {
         <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none md:hidden" />
       </div>
 
-      {/* Hinweis bei "Alle" */}
-      {value === 'all' && (
-        <p className="mt-3 text-xs text-text-tertiary">
-          Zeige alle Belege aus allen Kategorien
-        </p>
-      )}
+
     </div>
   );
 }
