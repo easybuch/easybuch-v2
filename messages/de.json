@@ -102,6 +102,7 @@
     "allCategories": "Alle Kategorien",
     "receiptDetails": "Beleg-Details",
     "extractedData": "Extrahierte Daten",
+    "extractedDataPlaceholder": "Die extrahierten Daten des Belegs werden hier nach der Analyse angezeigt",
     "rawText": "Rohdaten",
     "notes": "Notizen (optional)",
     "confidence": "Konfidenz"

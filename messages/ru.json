@@ -102,6 +102,7 @@
     "allCategories": "Все категории",
     "receiptDetails": "Детали чека",
     "extractedData": "Извлеченные данные",
+    "extractedDataPlaceholder": "Извлеченные данные чека будут отображаться здесь после анализа",
     "rawText": "Исходный текст",
     "notes": "Заметки (необязательно)",
     "confidence": "Уверенность"

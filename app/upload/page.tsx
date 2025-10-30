@@ -401,7 +401,8 @@ export default function UploadPage() {
           {!isExtracting && !extractedData && !extractionError && (
             <div className="p-8 text-center">
               <Sparkles size={48} className="text-gray-300 mx-auto mb-4" />
-              <p className="text-text-secondary">{t('receipts.extractedData')}</p>
+              <p className="text-text-secondary font-semibold mb-2">{t('receipts.extractedData')}</p>
+              <p className="text-sm text-text-footer">{t('receipts.extractedDataPlaceholder')}</p>
             </div>
           )}
         </Card>
@@ -444,7 +445,7 @@ export default function UploadPage() {
         <Button
           variant="primary"
           onClick={handleSave}
-          disabled={uploadedFiles.length === 0 || isSubmitting}
+          disabled={uploadedFiles.length === 0 || isSubmitting || !extractedData}
           className="sm:w-auto"
         >
           <Save size={20} className="mr-2" />
