@@ -31,7 +31,8 @@ const ACCEPTED_FILE_TYPES = {
 export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtraction, isExtracting }: FileUploadZoneProps) {
   const { t } = useLanguage();
   const [localError, setLocalError] = useState<string | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null); // For "Weiteres Foto" - opens camera directly
+  const fileInputRef = useRef<HTMLInputElement>(null); // For initial upload - shows browser menu
 
   const onDrop = useCallback(
     async (acceptedFiles: File[], rejectedFiles: unknown[]) => {
@@ -110,7 +111,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     noKeyboard: false,
   });
 
-  // Handle camera input separately for mobile
+  // Handle camera input separately for mobile (direct camera)
   const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -121,6 +122,20 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     // Reset input so same file can be selected again
     if (cameraInputRef.current) {
       cameraInputRef.current.value = '';
+    }
+  };
+
+  // Handle file input (shows browser menu with options)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    await onDrop(fileArray, []);
+    
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -138,10 +153,10 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     }
   };
 
-  // Custom click handler for initial upload zone
+  // Custom click handler for initial upload zone (shows browser menu)
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    cameraInputRef.current?.click();
+    fileInputRef.current?.click();
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -156,7 +171,17 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
 
   return (
     <div className="w-full h-full relative">
-      {/* Hidden camera input - placed outside dropzone for direct control */}
+      {/* Hidden file input for initial upload - shows browser menu with options */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,application/pdf"
+        multiple
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+      
+      {/* Hidden camera input for "Weiteres Foto" - opens camera directly */}
       <input
         ref={cameraInputRef}
         type="file"
