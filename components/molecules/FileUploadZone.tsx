@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, Camera, FileText } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
@@ -31,7 +31,6 @@ const ACCEPTED_FILE_TYPES = {
 export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtraction, isExtracting }: FileUploadZoneProps) {
   const { t } = useLanguage();
   const [localError, setLocalError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[], rejectedFiles: unknown[]) => {
@@ -101,7 +100,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     [onFileSelect, t, uploadedFiles]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept: ACCEPTED_FILE_TYPES,
     maxFiles: 5,
@@ -111,9 +110,12 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
   });
 
   // Custom click handler for better mobile support
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    fileInputRef.current?.click();
+  const handleClick = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    // Use dropzone's open method instead of clicking the input directly
+    open();
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -144,7 +146,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
             displayError && 'border-red-300'
           )}
         >
-          <input {...getInputProps()} ref={fileInputRef} />
+          <input {...getInputProps()} />
 
           {/* Upload Icon */}
           <div className="mb-6">
