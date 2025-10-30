@@ -113,13 +113,14 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     noKeyboard: false,
   });
 
-  // Handle camera input separately for mobile (direct camera)
+  // Handle camera input separately for mobile (direct camera from "Weiteres Foto")
   const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    isCameraUploadRef.current = true; // Mark upload as from camera
-    setFromCamera(true); // Update state for UI
+    // Always treat "Weiteres Foto" as camera upload (show buttons)
+    isCameraUploadRef.current = true;
+    setFromCamera(true);
     const fileArray = Array.from(files);
     await onDrop(fileArray, []);
     
@@ -127,24 +128,28 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     if (cameraInputRef.current) {
       cameraInputRef.current.value = '';
     }
-    // Don't start extraction - user needs to click "Jetzt analysieren"
   };
 
-  // Handle file input (shows browser menu with options - Galerie, etc.)
+  // Handle file input (shows browser menu with options)
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    isCameraUploadRef.current = false; // Mark upload as NOT from camera
-    setFromCamera(false); // Update state for UI
     const fileArray = Array.from(files);
+    
+    // Smart detection: 
+    // - Single file = might take more photos = show buttons
+    // - Multiple files = obviously gallery = auto-extract
+    const isSingleFile = fileArray.length === 1;
+    isCameraUploadRef.current = isSingleFile;
+    setFromCamera(isSingleFile);
+    
     await onDrop(fileArray, []);
     
     // Reset input so same file can be selected again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    // Auto-extraction will be handled in upload page based on fromCamera flag
   };
 
   // Custom click handler for camera button
