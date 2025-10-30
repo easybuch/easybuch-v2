@@ -130,7 +130,12 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
       e.preventDefault();
       e.stopPropagation();
     }
-    cameraInputRef.current?.click();
+    console.log('Camera button clicked', cameraInputRef.current); // Debug log
+    if (cameraInputRef.current) {
+      cameraInputRef.current.click();
+    } else {
+      console.error('Camera input ref is null');
+    }
   };
 
   // Custom click handler for initial upload zone
@@ -150,7 +155,18 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
   const displayError = error || localError;
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
+      {/* Hidden camera input - placed outside dropzone for direct control */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*,application/pdf"
+        capture="environment"
+        multiple
+        onChange={handleCameraChange}
+        style={{ display: 'none' }}
+      />
+      
       {uploadedFiles.length === 0 ? (
         /* Upload Zone - No files */
         <div
@@ -168,16 +184,6 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
           )}
         >
           <input {...getInputProps()} />
-          {/* Separate camera input for mobile */}
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*,application/pdf"
-            capture="environment"
-            multiple
-            onChange={handleCameraChange}
-            className="hidden"
-          />
 
           {/* Upload Icon */}
           <div className="mb-6">
@@ -241,6 +247,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
                 {/* Action Buttons */}
                 <div className="space-y-2">
                   <button
+                    type="button"
                     onClick={handleCameraClick}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
                     disabled={isExtracting}
@@ -290,6 +297,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
               <div className="p-6 border-t border-gray-200">
                 <div className="space-y-2">
                   <button
+                    type="button"
                     onClick={handleCameraClick}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
                     disabled={isExtracting}
@@ -359,6 +367,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
             {/* Mobile: Add more photos or start extraction */}
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={handleCameraClick}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
                 disabled={isExtracting}
