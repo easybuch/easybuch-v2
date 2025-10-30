@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, Camera, FileText } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
@@ -31,6 +31,7 @@ const ACCEPTED_FILE_TYPES = {
 export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtraction, isExtracting }: FileUploadZoneProps) {
   const { t } = useLanguage();
   const [localError, setLocalError] = useState<string | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[], rejectedFiles: unknown[]) => {
@@ -100,7 +101,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     [onFileSelect, t, uploadedFiles]
   );
 
-  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: ACCEPTED_FILE_TYPES,
     maxFiles: 5,
@@ -109,13 +110,33 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
     noKeyboard: false,
   });
 
-  // Custom click handler for better mobile support
-  const handleClick = (e?: React.MouseEvent) => {
+  // Handle camera input separately for mobile
+  const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    await onDrop(fileArray, []);
+    
+    // Reset input so same file can be selected again
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+    }
+  };
+
+  // Custom click handler for camera button
+  const handleCameraClick = (e?: React.MouseEvent) => {
     if (e) {
+      e.preventDefault();
       e.stopPropagation();
     }
-    // Use dropzone's open method instead of clicking the input directly
-    open();
+    cameraInputRef.current?.click();
+  };
+
+  // Custom click handler for initial upload zone
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    cameraInputRef.current?.click();
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -147,6 +168,16 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
           )}
         >
           <input {...getInputProps()} />
+          {/* Separate camera input for mobile */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            capture="environment"
+            multiple
+            onChange={handleCameraChange}
+            className="hidden"
+          />
 
           {/* Upload Icon */}
           <div className="mb-6">
@@ -210,7 +241,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
                 {/* Action Buttons */}
                 <div className="space-y-2">
                   <button
-                    onClick={handleClick}
+                    onClick={handleCameraClick}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
                     disabled={isExtracting}
                   >
@@ -259,7 +290,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
               <div className="p-6 border-t border-gray-200">
                 <div className="space-y-2">
                   <button
-                    onClick={handleClick}
+                    onClick={handleCameraClick}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
                     disabled={isExtracting}
                   >
@@ -328,7 +359,7 @@ export function FileUploadZone({ onFileSelect, uploadedFiles, error, onStartExtr
             {/* Mobile: Add more photos or start extraction */}
             <div className="flex gap-2">
               <button
-                onClick={handleClick}
+                onClick={handleCameraClick}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-brand hover:bg-brand/10 rounded-button transition-colors border border-brand"
                 disabled={isExtracting}
               >
