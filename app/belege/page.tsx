@@ -7,7 +7,6 @@ import { DashboardLayout } from '@/components/templates/DashboardLayout';
 import { Button } from '@/components/atoms/Button';
 import { Card, CardTitle, CardContent } from '@/components/atoms/Card';
 import { FileText, Search, Calendar, Coins, Loader2, Tag, Store } from 'lucide-react';
-import { Input } from '@/components/atoms/Input';
 import { ReceiptDetailModal } from '@/components/molecules/ReceiptDetailModal';
 import { CategoryFilter } from '@/components/molecules/CategoryFilter';
 import { supabase, supabaseUntyped } from '@/lib/supabase';
