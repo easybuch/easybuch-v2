@@ -9,7 +9,7 @@ import { Card, CardTitle, CardContent } from '@/components/atoms/Card';
 import { FileText, Search, Calendar, Coins, Loader2, Tag, Store } from 'lucide-react';
 import { ReceiptDetailModal } from '@/components/molecules/ReceiptDetailModal';
 import { CategoryFilter } from '@/components/molecules/CategoryFilter';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
 import { getCategoryTranslationKey } from '@/lib/category-mapping';
@@ -153,6 +153,29 @@ export default function BelegePage() {
     } catch (err) {
       console.error('Error generating signed URL:', err);
       alert(t('receipts.uploadError'));
+    }
+  };
+
+  const handleSaveReceipt = async (id: string, updates: Partial<Receipt>) => {
+    try {
+      const { error } = await supabaseUntyped
+        .from('receipts')
+        .update({
+          receipt_date: updates.receipt_date ?? null,
+          category: updates.category ?? null,
+          vendor: updates.vendor ?? null,
+          notes: updates.notes ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Refresh receipts list
+      await fetchReceipts();
+    } catch (err) {
+      console.error('Error updating receipt:', err);
+      throw err;
     }
   };
 
@@ -310,6 +333,7 @@ export default function BelegePage() {
           setSignedUrl(null);
           setSignedUrls(null);
         }}
+        onSave={handleSaveReceipt}
         onDelete={handleDeleteReceipt}
         signedUrl={signedUrl}
         signedUrls={signedUrls}

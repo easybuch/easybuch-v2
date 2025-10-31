@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Download, Trash2, Loader2 } from 'lucide-react';
+import { X, Download, Trash2, Save, Loader2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
 import { useLanguage } from '@/lib/language-context';
@@ -13,6 +13,7 @@ interface ReceiptDetailModalProps {
   receipt: Receipt | null;
   isOpen: boolean;
   onClose: () => void;
+  onSave: (id: string, updates: Partial<Receipt>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   signedUrl: string | null;
   signedUrls?: string[] | null; // For multi-image receipts
@@ -23,6 +24,7 @@ export const ReceiptDetailModal = ({
   receipt,
   isOpen,
   onClose,
+  onSave,
   onDelete,
   signedUrl,
   signedUrls,
@@ -34,7 +36,9 @@ export const ReceiptDetailModal = ({
     vendor: '',
     notes: '',
   });
+  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   useEffect(() => {
     if (receipt) {
@@ -49,6 +53,35 @@ export const ReceiptDetailModal = ({
 
   if (!isOpen || !receipt) return null;
 
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await onSave(receipt.id, {
+        receipt_date: formData.receipt_date || null,
+        category: formData.category || null,
+        vendor: formData.vendor || null,
+        notes: formData.notes || null,
+      });
+      
+      // Show success toast
+      setShowSuccessToast(true);
+      
+      // Hide toast after 2 seconds
+      setTimeout(() => {
+        setShowSuccessToast(false);
+      }, 2000);
+      
+      // Close modal after 2.5 seconds
+      setTimeout(() => {
+        onClose();
+      }, 2500);
+    } catch (error) {
+      console.error('Error saving receipt:', error);
+      alert(t('receipts.uploadError'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const formatAmount = (amount: number | null) => {
     if (amount === null || amount === undefined) return '—';
@@ -105,6 +138,19 @@ export const ReceiptDetailModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[60] animate-fade-in animate-slide-in-from-top">
+          <div className="bg-green-600 text-white px-6 py-4 rounded-button shadow-lg flex items-center gap-3">
+            <CheckCircle size={24} className="flex-shrink-0 animate-pulse" />
+            <div>
+              <p className="font-semibold">{t('receipts.uploadSuccess')}</p>
+              <p className="text-sm text-green-100">{t('common.save')}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="bg-white rounded-card shadow-card-hover w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -336,21 +382,12 @@ export const ReceiptDetailModal = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
-          <Button
-            variant="primary"
-            onClick={handleDownload}
-            disabled={!signedUrl || isDeleting}
-            className="w-full sm:w-auto order-1 sm:order-2"
-          >
-            <Download size={20} className="mr-2" />
-            {t('common.download')}
-          </Button>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6 border-t border-gray-200 bg-gray-50">
           <Button
             variant="secondary"
             onClick={handleDelete}
-            disabled={isDeleting}
-            className="w-full sm:w-auto order-2 sm:order-1"
+            disabled={isDeleting || isSaving}
+            className="w-full sm:w-auto"
           >
             {isDeleting ? (
               <>
@@ -364,6 +401,36 @@ export const ReceiptDetailModal = ({
               </>
             )}
           </Button>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Button
+              variant="secondary"
+              onClick={handleDownload}
+              disabled={!signedUrl || isSaving || isDeleting}
+              className="w-full sm:w-auto"
+            >
+              <Download size={20} className="mr-2" />
+              {t('common.download')}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSave}
+              disabled={isSaving || isDeleting}
+              className="w-full sm:w-auto"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 size={20} className="mr-2 animate-spin" />
+                  {t('common.loading')}
+                </>
+              ) : (
+                <>
+                  <Save size={20} className="mr-2" />
+                  {t('common.save')}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
