@@ -13,7 +13,6 @@ import { AccordionGroupedView } from '@/components/organisms/AccordionGroupedVie
 import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
-import { getCategoryTranslationKey } from '@/lib/category-mapping';
 import type { Receipt } from '@/lib/database.types';
 
 export default function BelegePage() {
@@ -106,15 +105,7 @@ export default function BelegePage() {
   });
 
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
-
-  // Removed unused formatFileSize function
+  // Removed unused formatFileSize and formatDate functions
 
   const handleViewReceipt = async (receipt: Receipt) => {
     try {

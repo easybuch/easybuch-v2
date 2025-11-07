@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronRight, Receipt as ReceiptIcon } from 'lucide-react';
+import { Receipt as ReceiptIcon } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { getCategoryTranslationKey } from '@/lib/category-mapping';
 import type { Receipt } from '@/lib/database.types';
