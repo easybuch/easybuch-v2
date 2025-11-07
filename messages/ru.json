@@ -107,7 +107,11 @@
     "extractedDataPlaceholder": "Извлеченные данные чека будут отображаться здесь после анализа",
     "rawText": "Исходный текст",
     "notes": "Заметки (необязательно)",
-    "confidence": "Уверенность"
+    "confidence": "Уверенность",
+    "showMoreReceipts": "показать больше чеков",
+    "showLessReceipts": "Показать меньше",
+    "receiptSingular": "чек",
+    "receiptPlural": "чеков"
   },
   "categories": {
     "officeMaterials": "Офисные материалы и оборудование",

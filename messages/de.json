@@ -107,7 +107,11 @@
     "extractedDataPlaceholder": "Die extrahierten Daten des Belegs werden hier nach der Analyse angezeigt",
     "rawText": "Rohdaten",
     "notes": "Notizen (optional)",
-    "confidence": "Konfidenz"
+    "confidence": "Konfidenz",
+    "showMoreReceipts": "weitere Belege anzeigen",
+    "showLessReceipts": "Weniger anzeigen",
+    "receiptSingular": "Beleg",
+    "receiptPlural": "Belege"
   },
   "categories": {
     "officeMaterials": "Büromaterial & Ausstattung",

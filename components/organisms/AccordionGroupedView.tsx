@@ -114,7 +114,7 @@ export function AccordionGroupedView({ receipts, onViewReceipt }: AccordionGroup
                     {t(getCategoryTranslationKey(group.category))}
                   </h3>
                   <p className="text-xs text-text-tertiary mt-0.5">
-                    {group.receipts.length} {group.receipts.length === 1 ? 'Beleg' : 'Belege'}
+                    {group.receipts.length} {group.receipts.length === 1 ? t('receipts.receiptSingular') : t('receipts.receiptPlural')}
                   </p>
                 </div>
               </div>
@@ -194,8 +194,8 @@ export function AccordionGroupedView({ receipts, onViewReceipt }: AccordionGroup
                     className="w-full py-2 text-xs font-medium text-brand hover:text-brand-dark transition-colors"
                   >
                     {showAll 
-                      ? '− Weniger anzeigen'
-                      : `+ ${group.receipts.length - 3} weitere Belege anzeigen`
+                      ? `− ${t('receipts.showLessReceipts')}`
+                      : `+ ${group.receipts.length - 3} ${t('receipts.showMoreReceipts')}`
                     }
                   </button>
                 </div>
