@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { DashboardLayout } from '@/components/templates/DashboardLayout';
 import { Button } from '@/components/atoms/Button';
 import { Card, CardTitle, CardContent } from '@/components/atoms/Card';
-import { FileText, Search, Calendar, Coins, Loader2, Tag, Store } from 'lucide-react';
+import { FileText, Search, Calendar, Loader2 } from 'lucide-react';
 import { ReceiptDetailModal } from '@/components/molecules/ReceiptDetailModal';
 import { CategoryFilter } from '@/components/molecules/CategoryFilter';
+import { AccordionGroupedView } from '@/components/organisms/AccordionGroupedView';
 import { supabase, supabaseUntyped } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
@@ -313,12 +314,9 @@ export default function BelegePage() {
       {!isLoading && !error && filteredReceipts.length === 0 && receipts.length > 0 && (
         <Card className="text-center py-16">
           <div className="max-w-md mx-auto">
-            <p className="text-text-secondary mb-4">
+            <p className="text-text-secondary">
               {t('receipts.noReceipts')}
             </p>
-            <Button variant="secondary" onClick={() => setSearchQuery('')}>
-              {t('common.cancel')}
-            </Button>
           </div>
         </Card>
       )}
@@ -339,93 +337,12 @@ export default function BelegePage() {
         signedUrls={signedUrls}
       />
 
-      {/* Receipts Grid */}
+      {/* Receipts Display */}
       {!isLoading && !error && filteredReceipts.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredReceipts.map((receipt) => (
-            <Card 
-              key={receipt.id} 
-              className="hover:shadow-md transition-shadow duration-200 cursor-pointer"
-            >
-              <div className="p-6 flex flex-col h-full">
-                {/* File Type Badge */}
-                <div className="flex items-center gap-2 mb-4">
-                  <div
-                    className={`w-10 h-10 rounded-button flex items-center justify-center ${
-                      receipt.file_type === 'pdf' ? 'bg-red-100' : 'bg-blue-100'
-                    }`}
-                  >
-                    <FileText
-                      size={20}
-                      className={receipt.file_type === 'pdf' ? 'text-red-600' : 'text-blue-600'}
-                    />
-                  </div>
-                  <span className="text-xs font-medium text-text-footer uppercase">
-                    {receipt.file_type}
-                  </span>
-                </div>
-
-                {/* File Name */}
-                <h3 className="font-semibold text-text-primary mb-3 truncate" title={receipt.file_name}>
-                  {receipt.file_name}
-                </h3>
-
-                {/* Divider */}
-                <div className="border-t border-gray-100 mb-4" />
-
-                {/* Metadata */}
-                <div className="space-y-3 mb-8 flex-grow">
-                  {/* Vendor/Supplier */}
-                  {receipt.vendor && (
-                    <div className="flex items-center gap-2 text-sm text-text-secondary">
-                      <Store size={16} className="text-brand" />
-                      <span className="truncate">{receipt.vendor}</span>
-                    </div>
-                  )}
-                  
-                  {/* Amount */}
-                  <div className="flex items-center gap-2 text-sm text-text-secondary">
-                    <Coins size={16} className="text-brand" />
-                    <span className="font-semibold">
-                      {receipt.amount_gross
-                        ? `${receipt.amount_gross.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
-                        : '—'}
-                    </span>
-                  </div>
-                  
-                  {/* Date */}
-                  <div className="flex items-center gap-2 text-sm text-text-secondary">
-                    <Calendar size={16} className="text-brand" />
-                    <span>
-                      {receipt.receipt_date
-                        ? formatDate(receipt.receipt_date)
-                        : formatDate(receipt.created_at)}
-                    </span>
-                  </div>
-                  
-                  {/* Category */}
-                  {receipt.category && (
-                    <div className="flex items-center gap-2 text-sm text-text-secondary">
-                      <Tag size={16} className="text-brand" />
-                      <span className="truncate">{t(getCategoryTranslationKey(receipt.category))}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2 mt-auto">
-                  <Button
-                    variant="primary"
-                    className="flex-1 text-sm"
-                    onClick={() => handleViewReceipt(receipt)}
-                  >
-                    {t('receipts.viewDetails')}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <AccordionGroupedView
+          receipts={filteredReceipts}
+          onViewReceipt={handleViewReceipt}
+        />
       )}
     </DashboardLayout>
   );
